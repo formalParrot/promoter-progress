@@ -2366,7 +2366,7 @@ async function genCodes(){
     S.regCodes[code]={name:'',email:'',phone:'',pw:'',activated:false};
     await dbInsert('students',{reg_code:code, name:'', email:code.toLowerCase()+'@pending.ep', phone:'', password:'', activated:false, student_id:''});
     var tr=document.createElement('tr');
-    tr.innerHTML='<td><span class="code-tag">'+code+'</span></td><td><span class="bdg bdg-orange">Unused</span></td><td>&mdash;</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,''+code+'')">Revoke</button></td>';
+    tr.innerHTML='<td><span class="code-tag">'+code+'</span></td><td><span class="bdg bdg-orange">Unused</span></td><td>&mdash;</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,\'+code+\')">Revoke</button></td>';
     tbody.appendChild(tr);
   }
   showToast('Generated '+count+' codes!','success');
@@ -3755,7 +3755,7 @@ function renderSchedTable(){
     var dur=sc.duration||150; var dh=Math.floor(dur/60),dm=dur%60;
     var durStr=(dh>0?dh+'h ':'')+dm+'min';
     var bdg=status==='live'?'<span class="bdg bdg-green">Live</span>':status==='upcoming'?'<span class="bdg bdg-orange">Upcoming</span>':'<span class="bdg" style="background:var(--gray-100);color:var(--gray-600);">Ended</span>';
-    rows+='<tr><td><strong>'+(ex?ex.title:code)+'</strong></td><td><span class="code-tag">'+code+'</span></td><td>'+(sc.date||'-')+'</td><td>'+(sc.time||'-')+'</td><td>'+durStr+'</td><td>'+bdg+'</td><td><button class="abtn abtn-ghost" style="padding:3px 10px;font-size:11px;" onclick="openExamEdit(''+code+'')">'+(status==='live'?'Manage':'Edit')+'</button></td></tr>';
+    rows+='<tr><td><strong>'+(ex?ex.title:code)+'</strong></td><td><span class="code-tag">'+code+'</span></td><td>'+(sc.date||'-')+'</td><td>'+(sc.time||'-')+'</td><td>'+durStr+'</td><td>'+bdg+'</td><td><button class="abtn abtn-ghost" style="padding:3px 10px;font-size:11px;" onclick="openExamEdit(\'+code+\')">'+(status==='live'?'Manage':'Edit')+'</button></td></tr>';
   });
   tbody.innerHTML=rows;
 }
