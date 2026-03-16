@@ -2154,7 +2154,7 @@ function refreshCodesTable() {
   Object.keys(S.regCodes).forEach(function(rc) {
     var u = S.regCodes[rc];
     var statusBdg = u.activated ? '<span class="bdg bdg-green">Used</span>' : '<span class="bdg bdg-orange">Unused</span>';
-    rows += '<tr><td><span class="code-tag">'+rc+'</span></td><td>'+statusBdg+'</td><td>'+(u.name||'&mdash;')+'</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,''+rc+'')">Revoke</button></td></tr>';
+    rows += '<tr><td><span class="code-tag">'+rc+'</span></td><td>'+statusBdg+'</td><td>'+(u.name||'&mdash;')+'</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,\''+rc+'\')">Revoke</button></td></tr>';
   });
   if (rows) tbody.innerHTML = rows;
 }
