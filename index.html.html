@@ -1144,6 +1144,8 @@ async function dbDelete(table, filters) {
 // ── Load all data from Supabase into S on startup ────────────────────────────
 async function loadAllData() {
   showLoadingOverlay(true);
+  // Safety timeout — hide overlay after 6 seconds no matter what
+  var _loadTimeout = setTimeout(function() { showLoadingOverlay(false); }, 6000);
   try {
     // Students
     var students = await dbGet('students');
@@ -1220,6 +1222,7 @@ async function loadAllData() {
     }
 
   } catch(e) { console.error('loadAllData error', e); }
+  clearTimeout(_loadTimeout);
   showLoadingOverlay(false);
 }
 
@@ -3931,7 +3934,7 @@ function selDD(tn, q, el) {
 
 
 <!-- ===== LOADING OVERLAY ===== -->
-<div id="loading-overlay" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
   <div style="color:#fff;font-family:Georgia,serif;font-size:16px;font-weight:600;">Loading platform...</div>
 </div>
