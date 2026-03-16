@@ -453,7 +453,6 @@ tbody tr:hover{background:var(--gray-50);}
 .inline-dd:focus{outline:none;border-color:var(--pink);}
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 <!-- LOGIN / SIGNUP -->
@@ -536,7 +535,7 @@ tbody tr:hover{background:var(--gray-50);}
       <button type="button" class="btn-auth" onclick="sendReset('phone')">Send Reset Code</button>
     </div>
     <div id="fp-success" class="success-msg">
-      <div id="fp-success-msg">Done! Check your <span id="fp-method-label">email</span> for your activation code.</div>
+      <div id="fp-success-msg">Your password will appear here.</div>
     </div>
     <div class="auth-footer" style="margin-top:16px;">
       <button type="button" onclick="showPage('page-auth')">&larr; Back to Sign In</button>
@@ -719,7 +718,7 @@ tbody tr:hover{background:var(--gray-50);}
           <div class="tbl-wrap"><table>
             <thead><tr><th>Name</th><th>Access Code</th><th>Email</th><th>Phone</th><th>ID</th><th>Status</th></tr></thead>
             <tbody id="stud-tbody">
-              <tr id="stud-placeholder"><td colspan="6" style="text-align:center;color:var(--gray-400);padding:16px;font-size:13px;">No students registered yet.</td></tr>
+              <tr id="stud-placeholder"><td colspan="6" style="text-align:center;color:var(--gray-400);padding:16px;">No students yet.</td></tr>
             </tbody>
           </table></div>
         </div>
@@ -736,7 +735,7 @@ tbody tr:hover{background:var(--gray-50);}
         <div class="acard"><div class="acard-title">Valid Codes</div>
           <div class="tbl-wrap"><table><thead><tr><th>Code</th><th>Status</th><th>Assigned To</th><th></th></tr></thead>
           <tbody id="codes-tbody">
-            <tr id="codes-placeholder"><td colspan="4" style="text-align:center;color:var(--gray-400);padding:16px;font-size:13px;">No codes generated yet.</td></tr>
+            <tr id="codes-placeholder"><td colspan="4" style="text-align:center;color:var(--gray-400);padding:16px;">No codes yet.</td></tr>
           </tbody></table>
         </div></div>
       </div>
@@ -1011,6 +1010,105 @@ tbody tr:hover{background:var(--gray-50);}
   </div>
 </div>
 </div></div>
+
+
+<div class="stat-modal-overlay" id="stat-modal-overlay" onclick="closeStatModal(event)">
+  <div class="stat-modal" id="stat-modal-box">
+    <button class="stat-modal-close" onclick="document.getElementById('stat-modal-overlay').classList.remove('open')">&times;</button>
+    <div class="stat-modal-title" id="stat-modal-title"></div>
+    <div id="stat-modal-body"></div>
+    <button id="stat-modal-go" class="abtn abtn-pink" style="display:none;width:100%;margin-top:16px;justify-content:center;font-size:13px;"></button>
+  </div>
+</div>
+
+
+
+
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast"></div>
+
+
+
+
+<!-- ===== EXAM PREVIEW OVERLAY ===== -->
+<div id="preview-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:4000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
+  <div style="background:#f9f9f9;border-radius:20px;width:100%;max-width:680px;min-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div id="preview-body" style="flex:1;"></div>
+  </div>
+</div>
+
+<!-- ===== LIVE EXAM EDIT OVERLAY ===== -->
+<div id="live-edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:4500;align-items:center;justify-content:center;padding:20px;">
+  <div id="live-edit-modal" style="background:#fff;border-radius:20px;width:100%;max-width:420px;padding:26px;box-shadow:0 8px 40px rgba(0,0,0,.22);animation:slideUp .3s ease;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;">Manage Live Exam</div>
+        <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">Changes apply instantly to students</div>
+      </div>
+      <button onclick="closeLiveEditModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--gray-400);line-height:1;">&times;</button>
+    </div>
+    <div id="live-edit-body"></div>
+  </div>
+</div>
+
+<!-- ===== EXAM ACTION CONFIRM OVERLAY ===== -->
+<div id="exam-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:5000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:360px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.22);animation:slideUp .25s ease;">
+    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Are you sure?</div>
+    <div id="exam-confirm-msg" style="font-size:14px;color:var(--gray-600);margin-bottom:22px;line-height:1.5;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="abtn abtn-ghost" style="flex:1;justify-content:center;padding:12px;" onclick="closeConfirm()">No, go back</button>
+      <button class="abtn abtn-pink" style="flex:1;justify-content:center;padding:12px;" onclick="doExamAction()">Yes, confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM SHEET OVERLAY ===== -->
+<div class="bs-overlay" id="bs-overlay">
+  <div class="bs-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-title" id="bs-title"></div>
+    <div class="bs-body" id="bs-body" style="overflow-y:auto;"></div>
+    <button class="abtn abtn-pink bs-goto" id="bs-goto-btn" onclick="bsGotoAction()" style="display:none;width:100%;justify-content:center;margin-top:16px;"></button>
+  </div>
+</div>
+
+
+<!-- ===== TIMES UP OVERLAY ===== -->
+<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:7000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:slideUp .3s ease;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">⏰</div>
+    <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:10px;color:var(--pink);">Time's Up!</div>
+    <div style="font-size:14px;color:var(--gray-600);line-height:1.6;margin-bottom:28px;">Your exam time has ended. Any answers you have completed will be saved. Please submit your exam now.</div>
+    <button onclick="doSubmitFromTimesUp()" style="width:100%;padding:15px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(232,0,110,.4);">Submit Exam</button>
+  </div>
+</div>
+
+<!-- ===== SUBMIT CONFIRM OVERLAY ===== -->
+<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .25s ease;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">📋</div>
+    <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:10px;">Submit Exam?</div>
+    <div style="font-size:13px;color:var(--gray-600);margin-bottom:24px;line-height:1.6;">Once submitted you will not be able to make any changes. Make sure you have answered all questions.</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('submit-confirm-overlay').style.display='none'" style="flex:1;padding:13px;background:var(--gray-100);border:none;border-radius:12px;font-family:Georgia,serif;font-size:14px;font-weight:600;cursor:pointer;">Go Back</button>
+      <button onclick="doSubmit()" style="flex:1;padding:13px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Yes, Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUBMIT SUCCESS OVERLAY ===== -->
+<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .3s ease;text-align:center;">
+    <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">✓</div>
+    <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:10px;">Exam Submitted!</div>
+    <div style="font-size:14px;color:var(--gray-600);line-height:1.6;margin-bottom:24px;">Your exam has been successfully submitted. Your results will be available once grading is complete.</div>
+    <button onclick="closeSubmitSuccess()" style="width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Okay</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 function selAns(tn, q, letter, el) {
@@ -1064,25 +1162,40 @@ function postAnnouncement(pin){
   t.value=''; b.value='';
   showToast(pin?'Posted and pinned!':'Posted!','success');
 }
-// ── Supabase client ──────────────────────────────────────────────────────────
+// ── Supabase ─────────────────────────────────────────────────────────────────
 const SUPA_URL = 'https://ntqvzwztgcorgssxfvbf.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50cXZ6d3p0Z2Nvcmdzc3hmdmJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDI0MDQsImV4cCI6MjA4OTE3ODQwNH0.5dd3ObqsBf7h49IWWaNuzKcFeOiKUtTfK0iH-TmuA1o';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-// ── In-memory state (runtime only) ───────────────────────────────────────────
+async function dbGet(table, filters) {
+  try { var q=sb.from(table).select('*'); if(filters){for(var k in filters)q=q.eq(k,filters[k]);} var {data,error}=await q; if(error){console.error('dbGet',table,error);return[];} return data||[]; } catch(e){console.error('dbGet err',e);return[];}
+}
+async function dbUpsert(table, row, conflict) {
+  try { var q=sb.from(table).upsert(row,conflict?{onConflict:conflict}:{}); var {error}=await q; if(error){console.error('dbUpsert',table,error);return false;} return true; } catch(e){console.error('dbUpsert err',e);return false;}
+}
+async function dbInsert(table, row) {
+  try { var {error}=await sb.from(table).insert(row); if(error){console.error('dbInsert',table,error);return false;} return true; } catch(e){console.error('dbInsert err',e);return false;}
+}
+async function dbUpdate(table, row, filters) {
+  try { var q=sb.from(table).update(row); for(var k in filters)q=q.eq(k,filters[k]); var {error}=await q; if(error){console.error('dbUpdate',table,error);return false;} return true; } catch(e){console.error('dbUpdate err',e);return false;}
+}
+async function dbDelete(table, filters) {
+  try { var q=sb.from(table).delete(); for(var k in filters)q=q.eq(k,filters[k]); var {error}=await q; if(error){console.error('dbDelete',table,error);return false;} return true; } catch(e){console.error('dbDelete err',e);return false;}
+}
+
 var S = {
   regCodes:    {},
   examCodes:   {},
   examIDs:     {},
   usedIDs:     {},
   adminCreds:  {u:'aleqsandre.lomadze@schoolprogress.ge', p:'AleksandreTheDevil'},
-  student:     null,
-  answers:     {t1:{},t2:{},t3:{},t4:{},t5:{},t6:{},t7:''},
-  timeLeft:    150*60,
-  timerInt:    null,
+  student:   null,
+  answers:   {t1:{},t2:{},t3:{},t4:{},t5:{},t6:{},t7:''},
+  timeLeft:  150*60,
+  timerInt:  null,
   timerPaused: false,
-  liveInt:     null,
-  curTask:     1,
+  liveInt:   null,
+  curTask:   1,
   exams:       {},
   schedule:    {},
   parsedExam:  null,
@@ -1092,217 +1205,6 @@ var S = {
   activeExamCode: null,
   objectHasValue: function(obj,val){var ks=Object.keys(obj);for(var i=0;i<ks.length;i++)if(obj[ks[i]]===val)return true;return false;}
 };
-
-// ── DB helper: run query and return data or [] ────────────────────────────────
-async function dbGet(table, filters) {
-  try {
-    var q = sb.from(table).select('*');
-    if (filters) { for (var k in filters) q = q.eq(k, filters[k]); }
-    var { data, error } = await q;
-    if (error) { console.error('dbGet', table, error); return []; }
-    return data || [];
-  } catch(e) { console.error('dbGet exception', e); return []; }
-}
-
-async function dbUpsert(table, row, conflict) {
-  try {
-    var q = sb.from(table).upsert(row, conflict ? { onConflict: conflict } : {});
-    var { error } = await q;
-    if (error) { console.error('dbUpsert', table, error); return false; }
-    return true;
-  } catch(e) { console.error('dbUpsert exception', e); return false; }
-}
-
-async function dbInsert(table, row) {
-  try {
-    var { error } = await sb.from(table).insert(row);
-    if (error) { console.error('dbInsert', table, error); return false; }
-    return true;
-  } catch(e) { console.error('dbInsert exception', e); return false; }
-}
-
-async function dbUpdate(table, row, filters) {
-  try {
-    var q = sb.from(table).update(row);
-    for (var k in filters) q = q.eq(k, filters[k]);
-    var { error } = await q;
-    if (error) { console.error('dbUpdate', table, error); return false; }
-    return true;
-  } catch(e) { console.error('dbUpdate exception', e); return false; }
-}
-
-async function dbDelete(table, filters) {
-  try {
-    var q = sb.from(table).delete();
-    for (var k in filters) q = q.eq(k, filters[k]);
-    var { error } = await q;
-    if (error) { console.error('dbDelete', table, error); return false; }
-    return true;
-  } catch(e) { console.error('dbDelete exception', e); return false; }
-}
-
-// ── Load all data from Supabase into S on startup ────────────────────────────
-async function loadAllData() {
-  showLoadingOverlay(true);
-  // Safety timeout — hide overlay after 6 seconds no matter what
-  var _loadTimeout = setTimeout(function() { showLoadingOverlay(false); }, 6000);
-  try {
-    // Students
-    var students = await dbGet('students');
-    S.regCodes = {};
-    students.forEach(function(s) {
-      S.regCodes[s.reg_code] = { name: s.name, email: s.email, phone: s.phone||'', pw: s.password, activated: s.activated, id: s.student_id, examCode: '' };
-    });
-
-    // Exams
-    var exams = await dbGet('exams');
-    S.exams = {};
-    S.examCodes = {};
-    exams.forEach(function(e) {
-      S.exams[e.code] = { title: e.title, code: e.code, unlock: e.code, duration: e.duration, hasAudio: e.has_audio, tasks: e.tasks||[], info: e.info||'', parsedExam: e.parsed_exam||null };
-      S.examCodes[e.code] = true;
-      if (e.parsed_exam) {
-        S.parsedExam = e.parsed_exam;
-        S.parsedTasks = e.parsed_exam.tasks || [];
-        applyParsedExam(e.parsed_exam, e.title);
-      }
-    });
-
-    // Exam IDs
-    var examIds = await dbGet('exam_ids');
-    S.examIDs = {};
-    S.usedIDs = {};
-    examIds.forEach(function(r) {
-      if (!S.examIDs[r.exam_code]) S.examIDs[r.exam_code] = [];
-      S.examIDs[r.exam_code].push(r.student_id);
-      if (r.used) S.usedIDs[r.exam_code+':'+r.student_id] = true;
-    });
-
-    // Schedule
-    var schedRows = await dbGet('schedule');
-    S.schedule = {};
-    schedRows.forEach(function(r) {
-      S.schedule[r.exam_code] = { date: r.date, time: r.time, title: (S.exams[r.exam_code]&&S.exams[r.exam_code].title)||r.exam_code, duration: r.duration||150 };
-    });
-
-    // Submissions
-    var subs = await dbGet('submissions');
-    S.completed = {};
-    subs.forEach(function(r) {
-      var key = r.student_email+'|'+r.exam_code;
-      S.completed[key] = { elapsedStr: r.elapsed_str||'', answers: r.answers||{}, submittedAt: r.submitted_at, examStartTime: r.exam_start_time||0 };
-    });
-
-    // Grades
-    var gradeRows = await dbGet('grades');
-    S.grades = {};
-    gradeRows.forEach(function(r) {
-      var key = r.student_email+'|'+r.exam_code;
-      if (!S.grades[key]) S.grades[key] = {};
-      var obj = { score: r.score, max: r.max_score, feedback: r.feedback||'' };
-      if (r.fluency !== null) { obj.fluency = r.fluency; obj.accuracy = r.accuracy; }
-      S.grades[key][r.task_key] = obj;
-    });
-
-    // Announcements
-    var anns = await dbGet('announcements');
-    if (anns.length) {
-      var latest = anns[anns.length-1];
-      var titleEl = document.getElementById('ann-title');
-      var bodyEl  = document.getElementById('ann-body');
-      if (titleEl) titleEl.textContent = latest.title;
-      if (bodyEl)  bodyEl.textContent  = latest.body;
-      if (latest.pinned) {
-        var pt = document.getElementById('pin-title'), pb = document.getElementById('pin-body');
-        if (pt) pt.textContent = latest.title;
-        if (pb) pb.textContent = latest.body;
-        var pa = document.getElementById('pinned-ann');
-        if (pa) pa.classList.add('show');
-      }
-    }
-
-  } catch(e) { console.error('loadAllData error', e); }
-  clearTimeout(_loadTimeout);
-  showLoadingOverlay(false);
-}
-
-function showLoadingOverlay(show) {
-  var el = document.getElementById('loading-overlay');
-  if (el) el.style.display = show ? 'flex' : 'none';
-}
-
-// ── Realtime subscriptions ────────────────────────────────────────────────────
-function startRealtimeSubscriptions() {
-  // Watch submissions — admin sees new submissions live
-  sb.channel('submissions-channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, function(payload) {
-      var r = payload.new;
-      if (r) {
-        var key = r.student_email+'|'+r.exam_code;
-        S.completed[key] = { elapsedStr: r.elapsed_str||'', answers: r.answers||{}, submittedAt: r.submitted_at, examStartTime: r.exam_start_time||0 };
-        // Refresh admin task list if open
-        var tasksEl = document.getElementById('sec-tasks');
-        if (tasksEl && tasksEl.classList.contains('active')) renderTaskList();
-        var gradingEl = document.getElementById('sec-grading');
-        if (gradingEl && gradingEl.classList.contains('active')) buildEssays();
-      }
-    })
-    .subscribe();
-
-  // Watch grades — student sees results update live
-  sb.channel('grades-channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'grades' }, function(payload) {
-      var r = payload.new;
-      if (r) {
-        var key = r.student_email+'|'+r.exam_code;
-        if (!S.grades[key]) S.grades[key] = {};
-        var obj = { score: r.score, max: r.max_score, feedback: r.feedback||'' };
-        if (r.fluency !== null) { obj.fluency = r.fluency; obj.accuracy = r.accuracy; }
-        S.grades[key][r.task_key] = obj;
-        if (S.student && S.student.email === r.student_email) renderStudentResults();
-      }
-    })
-    .subscribe();
-
-  // Watch timer state — sync pause/adjust across devices
-  sb.channel('timer-channel')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'timer_state' }, function(payload) {
-      var r = payload.new;
-      if (r && S.activeExamCode && r.exam_code === S.activeExamCode) {
-        S.timeLeft = r.time_left;
-        S.timerPaused = r.paused;
-        var el = document.getElementById('exam-timer');
-        if (el) {
-          var h=Math.floor(r.time_left/3600),m=Math.floor((r.time_left%3600)/60),s=r.time_left%60;
-          el.textContent=h+':'+pad(m)+':'+pad(s);
-          el.className='exam-timer'+(r.time_left<600?' danger':r.time_left<1800?' warn':'');
-        }
-        if (r.paused) { clearInterval(S.timerInt); }
-      }
-    })
-    .subscribe();
-
-  // Watch announcements — students see new announcements live
-  sb.channel('ann-channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcements' }, function(payload) {
-      var r = payload.new;
-      if (r) {
-        var titleEl = document.getElementById('ann-title');
-        var bodyEl  = document.getElementById('ann-body');
-        if (titleEl) titleEl.textContent = r.title;
-        if (bodyEl)  bodyEl.textContent  = r.body;
-        if (r.pinned) {
-          var pt = document.getElementById('pin-title'), pb = document.getElementById('pin-body');
-          if (pt) pt.textContent = r.title;
-          if (pb) pb.textContent = r.body;
-          var pa = document.getElementById('pinned-ann');
-          if (pa) pa.classList.add('show');
-          document.getElementById('ann-overlay').classList.add('open');
-        }
-      }
-    })
-    .subscribe();
-}
 
 function showPage(id) {
   var pages = document.querySelectorAll('.page');
@@ -1419,20 +1321,11 @@ async function doLogin() {
   var err   = document.getElementById('login-err');
   err.style.display = 'none';
   if (!email) { err.textContent='Please enter your email address.'; err.style.display='block'; return; }
-  var btn = document.querySelector('#page-auth .btn-auth');
-  if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
-  try {
-    var rows = await dbGet('students', { email: email });
-    if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
-    if (!rows.length || !rows[0].activated) { err.textContent='No account found with that email, or account not yet activated.'; err.style.display='block'; return; }
-    var u = rows[0];
-    if (u.password !== pw) { err.textContent='Incorrect password.'; err.style.display='block'; return; }
-    S.student = { name: u.name, email: u.email, phone: u.phone||'', pw: u.password, activated: true, id: u.student_id };
-    enterDash();
-  } catch(e) {
-    if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
-    err.textContent='Connection error. Please try again.'; err.style.display='block';
-  }
+  var rows = await dbGet('students', {email: email});
+  if (!rows.length || !rows[0].activated) { err.textContent='No account found, or account not activated.'; err.style.display='block'; return; }
+  if (rows[0].password !== pw) { err.textContent='Incorrect password.'; err.style.display='block'; return; }
+  S.student = {name:rows[0].name, email:rows[0].email, phone:rows[0].phone||'', pw:rows[0].password, activated:true, id:rows[0].student_id||''};
+  enterDash();
 }
 
 async function doSignup() {
@@ -1443,25 +1336,14 @@ async function doSignup() {
   var pw    = document.getElementById('su-pw').value;
   var err   = document.getElementById('signup-err');
   err.style.display = 'none';
-  if (!name || !email || !pw || !code) { err.textContent='Please fill in all required fields.'; err.style.display='block'; return; }
-  var btn = document.querySelector('#page-auth .btn-auth');
-  if (btn) { btn.textContent = 'Activating...'; btn.disabled = true; }
-  try {
-    // Check code exists and is not activated
-    var rows = await dbGet('students', { reg_code: code });
-    if (btn) { btn.textContent = 'Activate & Register'; btn.disabled = false; }
-    if (!rows.length) { err.textContent='Invalid activation code.'; err.style.display='block'; return; }
-    if (rows[0].activated) { err.textContent='This code has already been used.'; err.style.display='block'; return; }
-    // Update the student record
-    var ok = await dbUpdate('students', { name: name, email: email, phone: phone, password: pw, activated: true }, { reg_code: code });
-    if (!ok) { err.textContent='Registration failed. Please try again.'; err.style.display='block'; return; }
-    S.student = { name: name, email: email, phone: phone, pw: pw, activated: true, id: rows[0].student_id||'' };
-    S.regCodes[code] = S.student;
-    enterDash();
-  } catch(e) {
-    if (btn) { btn.textContent = 'Activate & Register'; btn.disabled = false; }
-    err.textContent='Connection error. Please try again.'; err.style.display='block';
-  }
+  if (!name||!email||!pw||!code) { err.textContent='Please fill in all required fields.'; err.style.display='block'; return; }
+  var rows = await dbGet('students', {reg_code: code});
+  if (!rows.length) { err.textContent='Invalid activation code.'; err.style.display='block'; return; }
+  if (rows[0].activated) { err.textContent='This code has already been used.'; err.style.display='block'; return; }
+  var ok = await dbUpdate('students', {name:name, email:email, phone:phone, password:pw, activated:true}, {reg_code:code});
+  if (!ok) { err.textContent='Registration failed. Please try again.'; err.style.display='block'; return; }
+  S.student = {name:name, email:email, phone:phone, pw:pw, activated:true, id:rows[0].student_id||''};
+  enterDash();
 }
 
 function doAdminLogin() {
@@ -1523,25 +1405,18 @@ function selectMethod(method) {
   document.getElementById('fp-success').classList.remove('show');
 }
 async function sendReset(method) {
-  var val = method==='email' ? document.getElementById('fp-email').value.trim() : document.getElementById('fp-phone').value.trim();
+  var val=method==='email'?document.getElementById('fp-email').value.trim():document.getElementById('fp-phone').value.trim();
   if (!val) { showToast('Please enter your '+(method==='email'?'email address':'phone number'),''); return; }
-  var filter = method==='email' ? {email: val.toLowerCase()} : {phone: val};
-  var rows = await dbGet('students', filter);
+  var filter=method==='email'?{email:val.toLowerCase()}:{phone:val};
+  var rows=await dbGet('students',filter);
   document.getElementById('forgot-email-field').style.display='none';
   document.getElementById('forgot-phone-field').style.display='none';
   document.getElementById('method-email').classList.remove('active');
   document.getElementById('method-phone').classList.remove('active');
-  if (!rows.length || !rows[0].activated) {
-    showToast('No account found with that '+(method==='email'?'email':'phone number'),'');
-    return;
-  }
-  var student = rows[0];
-  var successEl = document.getElementById('fp-success');
-  var msgEl = document.getElementById('fp-success-msg');
-  if (msgEl) {
-    msgEl.innerHTML = 'Your password is:<br><strong style="font-family:monospace;font-size:18px;color:var(--pink);letter-spacing:1px;">' + student.password + '</strong>';
-  }
-  if (successEl) successEl.classList.add('show');
+  if (!rows.length||!rows[0].activated) { showToast('No account found with that '+(method==='email'?'email':'phone number'),''); return; }
+  var msgEl=document.getElementById('fp-success-msg');
+  if (msgEl) msgEl.innerHTML='Your password is: <strong style="font-family:monospace;font-size:16px;color:var(--pink);">'+rows[0].password+'</strong>';
+  document.getElementById('fp-success').classList.add('show');
 }
 
 // ANNOUNCEMENTS
@@ -1599,49 +1474,32 @@ async function doUnlock() {
   var id  =document.getElementById('ex-id').value.trim().toUpperCase();
   var err =document.getElementById('unlock-err');
   err.style.display='none';
-  var btn = document.getElementById('unlock-modal').querySelector('.btn-auth');
-  if (btn) { btn.textContent='Checking...'; btn.disabled=true; }
-  try {
-    // Check exam exists
-    if (!S.examCodes[code]) {
-      var examRows = await dbGet('exams', { code: code });
-      if (!examRows.length) { err.textContent='Invalid exam code.'; err.style.display='block'; if(btn){btn.textContent='Unlock →';btn.disabled=false;} return; }
-      S.examCodes[code] = true;
-      S.exams[code] = { title: examRows[0].title, code: code, duration: examRows[0].duration||150, tasks: examRows[0].tasks||[], info: examRows[0].info||'', parsedExam: examRows[0].parsed_exam||null };
-      if (examRows[0].parsed_exam) applyParsedExam(examRows[0].parsed_exam, examRows[0].title);
-    }
-    // Check student ID registered for this exam
-    var idRows = await dbGet('exam_ids', { exam_code: code, student_id: id });
-    if (!idRows.length) { err.textContent='Your ID is not registered for this exam.'; err.style.display='block'; if(btn){btn.textContent='Unlock →';btn.disabled=false;} return; }
-    // Check if already submitted
-    if (S.student) {
-      var subRows = await dbGet('submissions', { student_email: S.student.email, exam_code: code });
-      if (subRows.length) { err.textContent='This exam has already been submitted.'; err.style.display='block'; if(btn){btn.textContent='Unlock →';btn.disabled=false;} return; }
-    }
-    // Mark ID as used in DB
-    var isReEntry = idRows[0].used;
-    if (!isReEntry) {
-      await dbUpdate('exam_ids', { used: true }, { exam_code: code, student_id: id });
-    }
-    S.usedIDs[code+':'+id] = true;
-    S.activeExamCode = code;
-    // Load schedule for this exam
-    var schedRows = await dbGet('schedule', { exam_code: code });
-    if (schedRows.length) S.schedule[code] = { date: schedRows[0].date, time: schedRows[0].time, duration: schedRows[0].duration||150, title: S.exams[code].title };
-    // Load timer state if exists (for re-entry)
-    var timerRows = await dbGet('timer_state', { exam_code: code });
-    if (timerRows.length) {
-      S.timeLeft = timerRows[0].time_left;
-      S.timerPaused = timerRows[0].paused;
-    }
-    if(btn){btn.textContent='Unlock →';btn.disabled=false;}
-    closeOverlay('unlock-modal');
-    startExam(isReEntry);
-  } catch(e) {
-    console.error('doUnlock error', e);
-    err.textContent='Connection error. Please try again.'; err.style.display='block';
-    if(btn){btn.textContent='Unlock →';btn.disabled=false;}
+  // Check exam exists
+  var examRows = await dbGet('exams', {code:code});
+  if (!examRows.length) { err.textContent='Invalid exam code.'; err.style.display='block'; return; }
+  // Check student ID registered
+  var idRows = await dbGet('exam_ids', {exam_code:code, student_id:id});
+  if (!idRows.length) { err.textContent='Your ID is not registered for this exam.'; err.style.display='block'; return; }
+  // Check already submitted
+  if (S.student) {
+    var subRows = await dbGet('submissions', {student_email:S.student.email, exam_code:code});
+    if (subRows.length) { err.textContent='This exam has already been submitted.'; err.style.display='block'; return; }
   }
+  // Load exam data
+  var ex = examRows[0];
+  S.exams[code] = {title:ex.title, code:code, duration:ex.duration||150, tasks:ex.tasks||[], info:ex.info||'', parsedExam:ex.parsed_exam||null};
+  S.examCodes[code] = true;
+  if (ex.parsed_exam) applyParsedExam(ex.parsed_exam, ex.title);
+  // Load schedule
+  var schedRows = await dbGet('schedule', {exam_code:code});
+  if (schedRows.length) S.schedule[code] = {date:schedRows[0].date, time:schedRows[0].time, duration:schedRows[0].duration||150, title:ex.title};
+  // Mark used
+  var isReEntry = idRows[0].used;
+  if (!isReEntry) await dbUpdate('exam_ids', {used:true}, {exam_code:code, student_id:id});
+  S.usedIDs[code+':'+id] = true;
+  S.activeExamCode = code;
+  closeOverlay('unlock-modal');
+  startExam(isReEntry);
 }
 
 // EXAM
@@ -2132,56 +1990,7 @@ function showSec(name){
   if(name==='students') refreshStudentsTable();
   if(name==='codes') refreshCodesTable();
   if(name==='results') renderResultsTable();
-}
-
-function refreshStudentsTable() {
-  var tbody = document.getElementById('stud-tbody');
-  if (!tbody) return;
-  var rows = '';
-  Object.keys(S.regCodes).forEach(function(rc) {
-    var u = S.regCodes[rc];
-    if (!u.name && !u.activated) return;
-    var statusBdg = u.activated ? '<span class="bdg bdg-green">Active</span>' : '<span class="bdg bdg-orange">Pending</span>';
-    rows += '<tr><td><strong>'+(u.name||'-')+'</strong></td><td><span class="code-tag">'+rc+'</span></td><td>'+(u.email||'-')+'</td><td>'+(u.phone||'-')+'</td><td><span class="code-tag">'+(u.id||'-')+'</span></td><td>'+statusBdg+'</td></tr>';
-  });
-  if (rows) tbody.innerHTML = rows;
-}
-
-function refreshCodesTable() {
-  var tbody = document.getElementById('codes-tbody');
-  if (!tbody) return;
-  var rows = '';
-  Object.keys(S.regCodes).forEach(function(rc) {
-    var u = S.regCodes[rc];
-    var statusBdg = u.activated ? '<span class="bdg bdg-green">Used</span>' : '<span class="bdg bdg-orange">Unused</span>';
-    rows += '<tr><td><span class="code-tag">'+rc+'</span></td><td>'+statusBdg+'</td><td>'+(u.name||'&mdash;')+'</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,\''+rc+'\')">Revoke</button></td></tr>';
-  });
-  if (rows) tbody.innerHTML = rows;
-}
-
-function renderResultsTable() {
-  var tbody = document.querySelector('#sec-results tbody');
-  if (!tbody) return;
-  var rows = '';
-  var compKeys = Object.keys(S.completed||{});
-  compKeys.forEach(function(ck) {
-    var parts = ck.split('|');
-    var stEmail = parts[0], exCode = parts[1];
-    var grades = S.grades[ck]||{};
-    var ex = S.exams[exCode];
-    var stName = S.regCodes ? Object.values(S.regCodes).find(function(u){return u.email===stEmail;}) : null;
-    var name = stName ? stName.name : stEmail;
-    var taskCount = ex && ex.tasks ? ex.tasks.length : 7;
-    var total = 0, allGraded = true;
-    var cells = '';
-    for (var ti=1;ti<=taskCount;ti++){
-      var tg = grades['t'+ti];
-      if (tg) { total+=tg.score; cells+='<td>'+tg.score+'/'+tg.max+'</td>'; }
-      else { allGraded=false; cells+='<td style="color:var(--gray-400);">—</td>'; }
-    }
-    rows+='<tr><td><strong>'+name+'</strong><br><span style="font-size:11px;color:var(--gray-400);">'+exCode+'</span></td>'+cells+'<td>'+(allGraded?'<strong>'+total+'</strong>':'<span style="color:var(--gray-400);">Pending</span>')+'</td></tr>';
-  });
-  tbody.innerHTML = rows || '<tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:20px;">No results yet.</td></tr>';
+  if(name==='schedule') renderSchedTable();
 }
 
 function renderSchedTable(){
@@ -2257,7 +2066,7 @@ function parsePdfWithAI(b64,fname,progInt,progEl){
   });
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01'},
+    headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:reqBody
   }).then(function(r){return r.json();}).then(function(data){
     clearInterval(progInt);
@@ -2350,7 +2159,7 @@ function applyParsedExam(parsed, fname) {
   showToast('Exam questions extracted!', 'success');
   if (document.getElementById('builder-key') && document.getElementById('builder-key').style.display !== 'none') buildAK();
 }
-async function removePdf(){
+function removePdf(){
   S.pdfFile=null;S.pdfDoc=null;S.parsedExam=null;
   var pi=document.getElementById('pdf-preview');if(pi)pi.style.display='none';
   var pr=document.getElementById('pdf-parsed-result');if(pr)pr.style.display='none';
@@ -2366,40 +2175,26 @@ async function saveExam(){
   var durEl    = document.getElementById('eb-time-min');
   var dateEl   = document.getElementById('eb-date');
   var timeEl   = document.getElementById('eb-time-start');
-  var duration = durEl ? (parseInt(durEl.value) || 150) : 150;
-  if (!title || !code) { showToast('Please fill in exam title and code', ''); return; }
+  var duration = durEl ? (parseInt(durEl.value)||150) : 150;
+  if (!title||!code) { showToast('Please fill in exam title and code',''); return; }
   var upperCode = code.toUpperCase();
-  var btn = document.querySelector('[onclick="saveExam()"]');
-  if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
-  try {
-    // Save exam to DB
-    await dbUpsert('exams', {
-      code: upperCode, title: title, duration: duration, info: infoText,
-      has_audio: false, tasks: S.parsedTasks||[], parsed_exam: S.parsedExam||null
-    }, 'code');
-    S.examCodes[upperCode] = true;
-    S.exams[upperCode] = { title:title, code:upperCode, unlock:upperCode, duration:duration, hasAudio:false, tasks:S.parsedTasks||[], info:infoText, parsedExam:S.parsedExam||null };
-    // Save generated IDs to DB
-    if (window._ebGeneratedIDs && window._ebGeneratedIDs.length) {
-      S.examIDs[upperCode] = window._ebGeneratedIDs.slice();
-      for (var ii=0; ii<window._ebGeneratedIDs.length; ii++) {
-        await dbUpsert('exam_ids', { exam_code: upperCode, student_id: window._ebGeneratedIDs[ii], used: false }, 'exam_code,student_id');
-      }
+  await dbUpsert('exams',{code:upperCode, title:title, duration:duration, info:infoText, has_audio:false, tasks:S.parsedTasks||[], parsed_exam:S.parsedExam||null},'code');
+  S.examCodes[upperCode]=true;
+  S.exams[upperCode]={title:title, code:upperCode, duration:duration, hasAudio:false, tasks:S.parsedTasks||[], info:infoText};
+  if (window._ebGeneratedIDs&&window._ebGeneratedIDs.length) {
+    S.examIDs[upperCode]=window._ebGeneratedIDs.slice();
+    for (var ii=0;ii<window._ebGeneratedIDs.length;ii++) {
+      await dbUpsert('exam_ids',{exam_code:upperCode, student_id:window._ebGeneratedIDs[ii], used:false},'exam_code,student_id');
     }
-    // Save schedule if date provided
-    if (dateEl && dateEl.value) {
-      var schedTime = timeEl ? timeEl.value : '10:00';
-      S.schedule[upperCode] = { date: dateEl.value, time: schedTime, title: title, duration: duration };
-      await dbUpsert('schedule', { exam_code: upperCode, date: dateEl.value, time: schedTime, duration: duration }, 'exam_code');
-    }
-    if (btn) { btn.textContent='Save & Publish'; btn.disabled=false; }
-    showToast('Exam saved!', 'success');
-    renderExamList();
-    hideExamBuilder();
-  } catch(e) {
-    if (btn) { btn.textContent='Save & Publish'; btn.disabled=false; }
-    showToast('Save failed. Please try again.', '');
   }
+  if (dateEl&&dateEl.value) {
+    var t=timeEl?timeEl.value:'10:00';
+    S.schedule[upperCode]={date:dateEl.value, time:t, title:title, duration:duration};
+    await dbUpsert('schedule',{exam_code:upperCode, date:dateEl.value, time:t, duration:duration},'exam_code');
+  }
+  showToast('Exam saved!','success');
+  renderExamList();
+  hideExamBuilder();
 }
 function buildAK(){
   var akContainer=document.getElementById('ak-container');
@@ -2515,7 +2310,7 @@ function buildEssays(){
   }
   el.innerHTML=h;
 }
-async function saveEssayGradeEntry(i){
+function saveEssayGradeEntry(i){
   var entries=window._essayEntries||[]; var e=entries[i]; if(!e) return;
   var f=document.getElementById('fl-'+i), a=document.getElementById('ac-'+i), fb=document.getElementById('fb-'+i);
   if(!f||!a||!f.value||!a.value){showToast('Enter both scores','');return;}
@@ -2526,10 +2321,6 @@ async function saveEssayGradeEntry(i){
   var obj={score:total,max:e.maxPts,fluency:fluency,accuracy:accuracy,feedback:fb?fb.value.trim():''};
   if(e.legacy){ S.grades[e.gk].essay=obj; }
   else{ S.grades[e.gk]['wt'+e.taskNum]=obj; S.grades[e.gk]['t'+e.taskNum]=obj; }
-  // Save to Supabase
-  var tkDB = e.legacy ? 'essay' : ('wt'+e.taskNum);
-  await dbUpsert('grades',{student_email:e.stEmail,exam_code:e.exCode,task_key:tkDB,score:total,max_score:e.maxPts,fluency:fluency,accuracy:accuracy,feedback:fb?fb.value.trim():''},'student_email,exam_code,task_key');
-  if(!e.legacy){await dbUpsert('grades',{student_email:e.stEmail,exam_code:e.exCode,task_key:'t'+e.taskNum,score:total,max_score:e.maxPts,fluency:fluency,accuracy:accuracy,feedback:fb?fb.value.trim():''},'student_email,exam_code,task_key');}
   showToast('Grade saved for '+e.stName+'! '+total+'/'+e.maxPts,'success');
   if(S.student) renderStudentResults();
   buildEssays();
@@ -2559,30 +2350,28 @@ function saveGrade(i, name) {
 }
 
 async function saveTaskGrade(studentEmail, examCode, taskNum, score, max, feedback) {
-  var key = studentEmail + '|' + examCode;
-  if (!S.grades[key]) S.grades[key] = {};
-  S.grades[key]['t' + taskNum] = { score: score, max: max, feedback: feedback || '' };
-  await dbUpsert('grades',{student_email:studentEmail,exam_code:examCode,task_key:'t'+taskNum,score:score,max_score:max,feedback:feedback||''},'student_email,exam_code,task_key');
-  showToast('Task ' + taskNum + ' grade saved!', 'success');
+  var key=studentEmail+'|'+examCode;
+  if (!S.grades[key]) S.grades[key]={};
+  S.grades[key]['t'+taskNum]={score:score, max:max, feedback:feedback||''};
+  await dbUpsert('grades',{student_email:studentEmail, exam_code:examCode, task_key:'t'+taskNum, score:score, max_score:max, feedback:feedback||''},'student_email,exam_code,task_key');
+  showToast('Task '+taskNum+' grade saved!','success');
   if (S.student) renderStudentResults();
 }
 async function genCodes(){
   var prefix=document.getElementById('cp').value.trim()||'PROMOTER', count=parseInt(document.getElementById('cc').value)||5;
   var tbody=document.getElementById('codes-tbody');
-  var generated=[];
+  var ph=document.getElementById('codes-placeholder'); if(ph) ph.remove();
   for(var i=0;i<count;i++){
     var code=prefix+'-'+Math.random().toString(36).substr(2,5).toUpperCase();
-    generated.push(code);
     S.regCodes[code]={name:'',email:'',phone:'',pw:'',activated:false};
-    // Save to DB
-    await dbInsert('students',{reg_code:code,name:'',email:code.toLowerCase()+'@pending.ep',phone:'',password:'',activated:false,student_id:''});
+    await dbInsert('students',{reg_code:code, name:'', email:code.toLowerCase()+'@pending.ep', phone:'', password:'', activated:false, student_id:''});
     var tr=document.createElement('tr');
     tr.innerHTML='<td><span class="code-tag">'+code+'</span></td><td><span class="bdg bdg-orange">Unused</span></td><td>&mdash;</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,''+code+'')">Revoke</button></td>';
     tbody.appendChild(tr);
   }
   showToast('Generated '+count+' codes!','success');
 }
-async function revokeCode(btn, code){ if(confirm('Revoke this code?')){ btn.closest('tr').remove(); if(code){ delete S.regCodes[code]; await dbDelete('students',{reg_code:code}); } showToast('Code revoked',''); } }
+async function revokeCode(btn,code){ if(confirm('Revoke this code?')){ btn.closest('tr').remove(); if(code){delete S.regCodes[code]; await dbDelete('students',{reg_code:code});} showToast('Code revoked',''); } }
 function openAddStudent(){ document.getElementById('add-stud-modal').classList.add('open'); document.getElementById('as-err').style.display='none'; }
 function addStudent(){
   var name=document.getElementById('as-name').value.trim(), code=document.getElementById('as-code').value.trim();
@@ -2604,7 +2393,7 @@ async function postAnn(pin){
   d.style.cssText='padding:8px 0;border-bottom:1px solid var(--gray-100);';
   d.innerHTML='<strong>'+t+'</strong>'+(pin?'<span class="bdg bdg-pink" style="margin-left:6px;">Pinned</span>':'')+'<p style="color:var(--gray-600);margin-top:2px;">'+b+'</p>';
   hist.insertBefore(d,hist.firstChild);
-  await dbInsert('announcements',{title:t,body:b,pinned:pin?true:false});
+  await dbInsert('announcements',{title:t, body:b, pinned:pin?true:false});
   showToast(pin?'Posted & pinned!':'Posted!','success');
   document.getElementById('ann-t').value=''; document.getElementById('ann-b').value='';
 }
@@ -2679,28 +2468,7 @@ window.addEventListener('load', function(){
   /* Seed built-in schedule/exam entries */
   if (!S.schedule['EXAM2026-V2']) S.schedule['EXAM2026-V2'] = { date: getTodayStr(), time: '10:00', title: 'English Language — V2', duration: 150 };
   if (!S.schedule['EXAM2026-V1']) S.schedule['EXAM2026-V1'] = { date: getDateStr(4),  time: '10:00', title: 'English Language — V1', duration: 150 };
-  // Populate students table from loaded S.regCodes
-  var _studTbody = document.getElementById('stud-tbody');
-  if (_studTbody) {
-    var _studRows = '';
-    Object.keys(S.regCodes).forEach(function(rc) {
-      var u = S.regCodes[rc];
-      if (!u.name && !u.email) return;
-      var statusBdg = u.activated ? '<span class="bdg bdg-green">Active</span>' : '<span class="bdg bdg-orange">Pending</span>';
-      _studRows += '<tr><td><strong>'+(u.name||'-')+'</strong></td><td><span class="code-tag">'+rc+'</span></td><td>'+(u.email||'-')+'</td><td>'+(u.phone||'-')+'</td><td><span class="code-tag">'+(u.id||'-')+'</span></td><td>'+statusBdg+'</td></tr>';
-    });
-    if (_studRows) _studTbody.innerHTML = _studRows;
-  }
-  // Populate exam selector in schedule section
-  var _schedSel = document.getElementById('sched-exam-sel');
-  if (_schedSel) {
-    Object.keys(S.exams).forEach(function(code) {
-      var opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = S.exams[code].title || code;
-      _schedSel.appendChild(opt);
-    });
-  }
+
 
   var overlays=document.querySelectorAll('.overlay');
   for(var i=0;i<overlays.length;i++){
@@ -2708,7 +2476,6 @@ window.addEventListener('load', function(){
   }
   var lipw=document.getElementById('li-pw'); if(lipw) lipw.addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
   var supw=document.getElementById('su-pw'); if(supw) supw.addEventListener('keydown',function(e){ if(e.key==='Enter') doSignup(); });
-  // Load all data from Supabase and start realtime
   loadAllData().then(function(){ startRealtimeSubscriptions(); });
 });
 
@@ -2866,7 +2633,7 @@ function closeConfirm() {
   if (el) el.style.display = 'none';
 }
 
-async function doExamAction() {
+function doExamAction() {
   var overlay = document.getElementById('exam-confirm-overlay');
   var action  = overlay.getAttribute('data-action');
   var code    = overlay.getAttribute('data-code');
@@ -2903,8 +2670,6 @@ async function doExamAction() {
     var h=Math.floor(S.timeLeft/3600), m=Math.floor((S.timeLeft%3600)/60), s=S.timeLeft%60;
     var el = document.getElementById('exam-timer');
     if (el) { el.textContent=h+':'+pad(m)+':'+pad(s); el.className='exam-timer'+(S.timeLeft<600?' danger':S.timeLeft<1800?' warn':''); }
-    // Sync to DB so re-entry gets correct time
-    await dbUpsert('timer_state',{exam_code:code,time_left:S.timeLeft,paused:S.timerPaused,updated_at:new Date().toISOString()},'exam_code');
     openLiveEditModal(code);
   }
 }
@@ -2960,40 +2725,34 @@ function showTimesUp() {
   if (el) { el.textContent = '0:00:00'; el.className = 'exam-timer danger'; }
   document.getElementById('times-up-overlay').style.display = 'flex';
 }
-function doSubmitFromTimesUp() {
+async function doSubmitFromTimesUp() {
   document.getElementById('times-up-overlay').style.display = 'none';
-  // Save whatever answers exist
   if (S.student && S.activeExamCode) {
-    var elapsed = S.examStartTime ? Math.floor((Date.now() - S.examStartTime) / 1000) : 0;
-    var eh = Math.floor(elapsed / 3600), em = Math.floor((elapsed % 3600) / 60);
-    var elapsedStr = (eh > 0 ? eh + 'h ' : '') + em + 'm';
-    var compKey = S.student.email + '|' + S.activeExamCode;
-    S.completed[compKey] = {
-      elapsedStr: elapsedStr,
-      submittedAt: new Date().toISOString(),
-      answers: JSON.parse(JSON.stringify(S.answers))
-    };
+    var elapsed=S.examStartTime?Math.floor((Date.now()-S.examStartTime)/1000):0;
+    var eh=Math.floor(elapsed/3600), em=Math.floor((elapsed%3600)/60);
+    var elapsedStr=(eh>0?eh+'h ':'')+em+'m';
+    var compKey=S.student.email+'|'+S.activeExamCode;
+    var answers=JSON.parse(JSON.stringify(S.answers));
+    S.completed[compKey]={elapsedStr:elapsedStr, submittedAt:new Date().toISOString(), answers:answers};
+    await dbUpsert('submissions',{student_email:S.student.email, exam_code:S.activeExamCode, answers:answers, elapsed_str:elapsedStr, exam_start_time:S.examStartTime||0, submitted_at:new Date().toISOString()},'student_email,exam_code');
   }
   document.getElementById('submit-success-overlay').style.display = 'flex';
 }
 function showSubmitConfirm() {
   document.getElementById('submit-confirm-overlay').style.display = 'flex';
 }
-function doSubmit() {
+async function doSubmit() {
   document.getElementById('submit-confirm-overlay').style.display = 'none';
   clearInterval(S.timerInt);
   S.timerPaused = false;
-  // Save submission to S.completed
   if (S.student && S.activeExamCode) {
-    var elapsed = S.examStartTime ? Math.floor((Date.now() - S.examStartTime) / 1000) : 0;
-    var eh = Math.floor(elapsed / 3600), em = Math.floor((elapsed % 3600) / 60);
-    var elapsedStr = (eh > 0 ? eh + 'h ' : '') + em + 'm';
-    var compKey = S.student.email + '|' + S.activeExamCode;
-    S.completed[compKey] = {
-      elapsedStr: elapsedStr,
-      submittedAt: new Date().toISOString(),
-      answers: JSON.parse(JSON.stringify(S.answers))
-    };
+    var elapsed = S.examStartTime ? Math.floor((Date.now()-S.examStartTime)/1000) : 0;
+    var eh=Math.floor(elapsed/3600), em=Math.floor((elapsed%3600)/60);
+    var elapsedStr=(eh>0?eh+'h ':'')+em+'m';
+    var compKey=S.student.email+'|'+S.activeExamCode;
+    var answers=JSON.parse(JSON.stringify(S.answers));
+    S.completed[compKey]={elapsedStr:elapsedStr, submittedAt:new Date().toISOString(), answers:answers};
+    await dbUpsert('submissions',{student_email:S.student.email, exam_code:S.activeExamCode, answers:answers, elapsed_str:elapsedStr, exam_start_time:S.examStartTime||0, submitted_at:new Date().toISOString()},'student_email,exam_code');
   }
   document.getElementById('submit-success-overlay').style.display = 'flex';
 }
@@ -3352,17 +3111,16 @@ async function scheduleExam(code) {
   var selEl  = document.getElementById('sched-exam-sel');
   var dateEl = document.getElementById('sched-date');
   var timeEl = document.getElementById('sched-time');
-  if (!selEl || !dateEl) return;
-  var examCode = code || selEl.value;
-  var date     = dateEl.value;
-  var time     = timeEl ? timeEl.value : '10:00';
-  if (!examCode || !date) { showToast('Please select an exam and date', ''); return; }
-  var ex = S.exams[examCode];
-  if (!ex) return;
-  S.schedule[examCode] = { date: date, time: time, title: ex.title, duration: ex.duration || 150 };
-  await dbUpsert('schedule',{exam_code:examCode,date:date,time:time,duration:ex.duration||150},'exam_code');
+  if (!selEl||!dateEl) return;
+  var examCode=code||selEl.value;
+  var date=dateEl.value;
+  var time=timeEl?timeEl.value:'10:00';
+  if (!examCode||!date) { showToast('Please select an exam and date',''); return; }
+  var ex=S.exams[examCode]; if(!ex) return;
+  S.schedule[examCode]={date:date, time:time, title:ex.title, duration:ex.duration||150};
+  await dbUpsert('schedule',{exam_code:examCode, date:date, time:time, duration:ex.duration||150},'exam_code');
   renderSchedTable();
-  showToast('Exam scheduled!', 'success');
+  showToast('Exam scheduled!','success');
 }
 
 
@@ -3868,110 +3626,140 @@ function selDD(tn, q, el) {
 }
 
 
+
+// ── Load all data from Supabase ───────────────────────────────────────────────
+async function loadAllData() {
+  try {
+    var students = await dbGet('students');
+    S.regCodes = {};
+    students.forEach(function(s) {
+      S.regCodes[s.reg_code] = {name:s.name, email:s.email, phone:s.phone||'', pw:s.password, activated:s.activated, id:s.student_id||''};
+    });
+    var exams = await dbGet('exams');
+    S.exams = {}; S.examCodes = {};
+    exams.forEach(function(e) {
+      S.exams[e.code] = {title:e.title, code:e.code, duration:e.duration||150, hasAudio:e.has_audio, tasks:e.tasks||[], info:e.info||'', parsedExam:e.parsed_exam||null};
+      S.examCodes[e.code] = true;
+    });
+    var examIds = await dbGet('exam_ids');
+    S.examIDs = {}; S.usedIDs = {};
+    examIds.forEach(function(r) {
+      if (!S.examIDs[r.exam_code]) S.examIDs[r.exam_code] = [];
+      S.examIDs[r.exam_code].push(r.student_id);
+      if (r.used) S.usedIDs[r.exam_code+':'+r.student_id] = true;
+    });
+    var schedRows = await dbGet('schedule');
+    S.schedule = {};
+    schedRows.forEach(function(r) {
+      S.schedule[r.exam_code] = {date:r.date, time:r.time, title:(S.exams[r.exam_code]&&S.exams[r.exam_code].title)||r.exam_code, duration:r.duration||150};
+    });
+    var subs = await dbGet('submissions');
+    S.completed = {};
+    subs.forEach(function(r) {
+      S.completed[r.student_email+'|'+r.exam_code] = {elapsedStr:r.elapsed_str||'', answers:r.answers||{}, submittedAt:r.submitted_at, examStartTime:r.exam_start_time||0};
+    });
+    var gradeRows = await dbGet('grades');
+    S.grades = {};
+    gradeRows.forEach(function(r) {
+      var key=r.student_email+'|'+r.exam_code;
+      if (!S.grades[key]) S.grades[key]={};
+      var obj={score:r.score, max:r.max_score, feedback:r.feedback||''};
+      if (r.fluency!==null&&r.fluency!==undefined) {obj.fluency=r.fluency; obj.accuracy=r.accuracy;}
+      S.grades[key][r.task_key]=obj;
+    });
+    var anns = await dbGet('announcements');
+    if (anns.length) {
+      var latest=anns[anns.length-1];
+      var tEl=document.getElementById('ann-title'), bEl=document.getElementById('ann-body');
+      if (tEl) tEl.textContent=latest.title;
+      if (bEl) bEl.textContent=latest.body;
+      if (latest.pinned) {
+        var pt=document.getElementById('pin-title'), pb=document.getElementById('pin-body');
+        if (pt) pt.textContent=latest.title;
+        if (pb) pb.textContent=latest.body;
+        var pa=document.getElementById('pinned-ann'); if(pa) pa.classList.add('show');
+      }
+    }
+  } catch(e) { console.error('loadAllData error',e); }
+}
+
+function startRealtimeSubscriptions() {
+  sb.channel('subs').on('postgres_changes',{event:'*',schema:'public',table:'submissions'},function(payload){
+    var r=payload.new; if(!r) return;
+    S.completed[r.student_email+'|'+r.exam_code]={elapsedStr:r.elapsed_str||'', answers:r.answers||{}, submittedAt:r.submitted_at};
+    var el=document.getElementById('sec-tasks'); if(el&&el.classList.contains('active')) renderTaskList();
+    var el2=document.getElementById('sec-grading'); if(el2&&el2.classList.contains('active')) buildEssays();
+  }).subscribe();
+  sb.channel('grd').on('postgres_changes',{event:'*',schema:'public',table:'grades'},function(payload){
+    var r=payload.new; if(!r) return;
+    var key=r.student_email+'|'+r.exam_code;
+    if (!S.grades[key]) S.grades[key]={};
+    var obj={score:r.score, max:r.max_score, feedback:r.feedback||''};
+    if (r.fluency!==null&&r.fluency!==undefined){obj.fluency=r.fluency;obj.accuracy=r.accuracy;}
+    S.grades[key][r.task_key]=obj;
+    if (S.student&&S.student.email===r.student_email) renderStudentResults();
+  }).subscribe();
+}
+
+// ── Helper functions used by admin panel ─────────────────────────────────────
+function refreshStudentsTable() {
+  var tbody=document.getElementById('stud-tbody'); if(!tbody) return;
+  var rows='';
+  Object.keys(S.regCodes).forEach(function(rc){
+    var u=S.regCodes[rc]; if(!u.name&&!u.activated) return;
+    var bdg=u.activated?'<span class="bdg bdg-green">Active</span>':'<span class="bdg bdg-orange">Pending</span>';
+    rows+='<tr><td><strong>'+(u.name||'-')+'</strong></td><td><span class="code-tag">'+rc+'</span></td><td>'+(u.email||'-')+'</td><td>'+(u.phone||'-')+'</td><td><span class="code-tag">'+(u.id||'-')+'</span></td><td>'+bdg+'</td></tr>';
+  });
+  tbody.innerHTML=rows||'<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:16px;">No students yet.</td></tr>';
+}
+
+function refreshCodesTable() {
+  var tbody=document.getElementById('codes-tbody'); if(!tbody) return;
+  var rows='';
+  Object.keys(S.regCodes).forEach(function(rc){
+    var u=S.regCodes[rc];
+    var bdg=u.activated?'<span class="bdg bdg-green">Used</span>':'<span class="bdg bdg-orange">Unused</span>';
+    rows+='<tr><td><span class="code-tag">'+rc+'</span></td><td>'+bdg+'</td><td>'+(u.name||'&mdash;')+'</td><td><button class="abtn abtn-ghost" style="padding:3px 8px;font-size:11px;" onclick="revokeCode(this,\''+rc+'\')">Revoke</button></td></tr>';
+  });
+  tbody.innerHTML=rows||'<tr id="codes-placeholder"><td colspan="4" style="text-align:center;color:var(--gray-400);padding:16px;">No codes yet.</td></tr>';
+}
+
+function renderResultsTable() {
+  var tbody=document.querySelector('#sec-results tbody'); if(!tbody) return;
+  var rows='';
+  Object.keys(S.completed||{}).forEach(function(ck){
+    var pts=ck.split('|'); var stEmail=pts[0], exCode=pts[1];
+    var grades=S.grades[ck]||{}; var ex=S.exams[exCode];
+    var stObj=Object.values(S.regCodes).find(function(u){return u.email===stEmail;});
+    var name=stObj?stObj.name:stEmail;
+    var taskCount=ex&&ex.tasks?ex.tasks.length:7;
+    var total=0, allGraded=true, cells='';
+    for(var ti=1;ti<=taskCount;ti++){
+      var tg=grades['t'+ti];
+      if(tg){total+=tg.score;cells+='<td>'+tg.score+'/'+tg.max+'</td>';}
+      else{allGraded=false;cells+='<td style="color:var(--gray-400);">—</td>';}
+    }
+    rows+='<tr><td><strong>'+name+'</strong></td>'+cells+'<td>'+(allGraded?'<strong>'+total+'</strong>':'<span style="color:var(--gray-400);">Pending</span>')+'</td></tr>';
+  });
+  tbody.innerHTML=rows||'<tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:20px;">No results yet.</td></tr>';
+}
+
+function renderSchedTable(){
+  var tbody=document.getElementById('sched-tbody'); if(!tbody) return;
+  var keys=Object.keys(S.schedule||{});
+  if(!keys.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px;font-size:13px;">No exams scheduled yet.</td></tr>';return;}
+  var rows='';
+  keys.forEach(function(code){
+    var sc=S.schedule[code]; var ex=S.exams[code];
+    var status=getExamStatus(sc.date,sc.time,sc.duration);
+    var dur=sc.duration||150; var dh=Math.floor(dur/60),dm=dur%60;
+    var durStr=(dh>0?dh+'h ':'')+dm+'min';
+    var bdg=status==='live'?'<span class="bdg bdg-green">Live</span>':status==='upcoming'?'<span class="bdg bdg-orange">Upcoming</span>':'<span class="bdg" style="background:var(--gray-100);color:var(--gray-600);">Ended</span>';
+    rows+='<tr><td><strong>'+(ex?ex.title:code)+'</strong></td><td><span class="code-tag">'+code+'</span></td><td>'+(sc.date||'-')+'</td><td>'+(sc.time||'-')+'</td><td>'+durStr+'</td><td>'+bdg+'</td><td><button class="abtn abtn-ghost" style="padding:3px 10px;font-size:11px;" onclick="openExamEdit(''+code+'')">'+(status==='live'?'Manage':'Edit')+'</button></td></tr>';
+  });
+  tbody.innerHTML=rows;
+}
+
 </script>
-
-<div class="stat-modal-overlay" id="stat-modal-overlay" onclick="closeStatModal(event)">
-  <div class="stat-modal" id="stat-modal-box">
-    <button class="stat-modal-close" onclick="document.getElementById('stat-modal-overlay').classList.remove('open')">&times;</button>
-    <div class="stat-modal-title" id="stat-modal-title"></div>
-    <div id="stat-modal-body"></div>
-    <button id="stat-modal-go" class="abtn abtn-pink" style="display:none;width:100%;margin-top:16px;justify-content:center;font-size:13px;"></button>
-  </div>
-</div>
-
-
-
-
-
-<!-- ===== TOAST ===== -->
-<div id="toast" class="toast"></div>
-
-
-
-
-<!-- ===== EXAM PREVIEW OVERLAY ===== -->
-<div id="preview-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:4000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;">
-  <div style="background:#f9f9f9;border-radius:20px;width:100%;max-width:680px;min-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
-    <div id="preview-body" style="flex:1;"></div>
-  </div>
-</div>
-
-<!-- ===== LIVE EXAM EDIT OVERLAY ===== -->
-<div id="live-edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:4500;align-items:center;justify-content:center;padding:20px;">
-  <div id="live-edit-modal" style="background:#fff;border-radius:20px;width:100%;max-width:420px;padding:26px;box-shadow:0 8px 40px rgba(0,0,0,.22);animation:slideUp .3s ease;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <div>
-        <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;">Manage Live Exam</div>
-        <div style="font-size:12px;color:var(--gray-500);margin-top:2px;">Changes apply instantly to students</div>
-      </div>
-      <button onclick="closeLiveEditModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--gray-400);line-height:1;">&times;</button>
-    </div>
-    <div id="live-edit-body"></div>
-  </div>
-</div>
-
-<!-- ===== EXAM ACTION CONFIRM OVERLAY ===== -->
-<div id="exam-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:5000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:360px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.22);animation:slideUp .25s ease;">
-    <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Are you sure?</div>
-    <div id="exam-confirm-msg" style="font-size:14px;color:var(--gray-600);margin-bottom:22px;line-height:1.5;"></div>
-    <div style="display:flex;gap:10px;">
-      <button class="abtn abtn-ghost" style="flex:1;justify-content:center;padding:12px;" onclick="closeConfirm()">No, go back</button>
-      <button class="abtn abtn-pink" style="flex:1;justify-content:center;padding:12px;" onclick="doExamAction()">Yes, confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== BOTTOM SHEET OVERLAY ===== -->
-<div class="bs-overlay" id="bs-overlay">
-  <div class="bs-sheet">
-    <div class="bs-handle"></div>
-    <div class="bs-title" id="bs-title"></div>
-    <div class="bs-body" id="bs-body" style="overflow-y:auto;"></div>
-    <button class="abtn abtn-pink bs-goto" id="bs-goto-btn" onclick="bsGotoAction()" style="display:none;width:100%;justify-content:center;margin-top:16px;"></button>
-  </div>
-</div>
-
-
-<!-- ===== LOADING OVERLAY ===== -->
-<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
-  <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-  <div style="color:#fff;font-family:Georgia,serif;font-size:16px;font-weight:600;">Loading platform...</div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
-<!-- ===== TIMES UP OVERLAY ===== -->
-<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:7000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:slideUp .3s ease;text-align:center;">
-    <div style="font-size:48px;margin-bottom:12px;">⏰</div>
-    <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:10px;color:var(--pink);">Time's Up!</div>
-    <div style="font-size:14px;color:var(--gray-600);line-height:1.6;margin-bottom:28px;">Your exam time has ended. Any answers you have completed will be saved. Please submit your exam now.</div>
-    <button onclick="doSubmitFromTimesUp()" style="width:100%;padding:15px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(232,0,110,.4);">Submit Exam</button>
-  </div>
-</div>
-
-<!-- ===== SUBMIT CONFIRM OVERLAY ===== -->
-<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .25s ease;text-align:center;">
-    <div style="font-size:40px;margin-bottom:12px;">📋</div>
-    <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:10px;">Submit Exam?</div>
-    <div style="font-size:13px;color:var(--gray-600);margin-bottom:24px;line-height:1.6;">Once submitted you will not be able to make any changes. Make sure you have answered all questions.</div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="document.getElementById('submit-confirm-overlay').style.display='none'" style="flex:1;padding:13px;background:var(--gray-100);border:none;border-radius:12px;font-family:Georgia,serif;font-size:14px;font-weight:600;cursor:pointer;">Go Back</button>
-      <button onclick="doSubmit()" style="flex:1;padding:13px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Yes, Submit</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SUBMIT SUCCESS OVERLAY ===== -->
-<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .3s ease;text-align:center;">
-    <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">✓</div>
-    <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:10px;">Exam Submitted!</div>
-    <div style="font-size:14px;color:var(--gray-600);line-height:1.6;margin-bottom:24px;">Your exam has been successfully submitted. Your results will be available once grading is complete.</div>
-    <button onclick="closeSubmitSuccess()" style="width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Okay</button>
-  </div>
-</div>
-
 </body>
 </html>
