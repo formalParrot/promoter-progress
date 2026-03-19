@@ -2112,15 +2112,18 @@ function parsePdfWithAI(b64,fname,progInt,progEl){
       try{
         var text = data.text || '';
         if (!text && data.error) throw new Error(data.error);
-        // Strip markdown code fences if present
+        if (!text) throw new Error('Empty response from AI');
+        // Strip markdown code fences
         var bt=String.fromCharCode(96);
-        var btRx=new RegExp(bt+bt+bt+'json|'+bt+bt+bt,'g');
+        var btRx=new RegExp(bt+bt+bt+'(?:json)?\\s*|'+bt+bt+bt,'g');
         text = text.replace(btRx,'').trim();
-        // Find JSON object in response
+        // Find outermost JSON object
         var jsonStart = text.indexOf('{');
-        var jsonEnd = text.lastIndexOf('}');
-        if (jsonStart !== -1 && jsonEnd !== -1) text = text.slice(jsonStart, jsonEnd+1);
+        var jsonEnd   = text.lastIndexOf('}');
+        if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found in response');
+        text = text.slice(jsonStart, jsonEnd+1);
         var parsed = JSON.parse(text);
+        if (!parsed.tasks || !parsed.tasks.length) throw new Error('No tasks found');
         applyParsedExam(parsed, fname);
       }catch(err){
         console.error('Parse error:', err);
@@ -2158,7 +2161,9 @@ function applyParsedExam(parsed, fname) {
       if (t.type === 'listening' || t.type === 'reading') {
         TASKS[tn].qs   = [];
         TASKS[tn].opts = t.answer_options || ['A','B','C','D'];
-        if (t.text) TASKS[tn].text = t.text;
+        // Handle various field names Gemini might use for the passage
+        var taskText = t.text || t.passage || t.reading_text || t.article || t.content || '';
+        if (taskText) TASKS[tn].text = taskText;
         for (var qi = 0; qi < (t.questions || []).length; qi++) {
           TASKS[tn].qs.push({ q: t.questions[qi], os: (t.options && t.options[qi]) || [] });
         }
@@ -2166,6 +2171,8 @@ function applyParsedExam(parsed, fname) {
         TASKS[tn].passages = t.passages || {};
         TASKS[tn].opts     = t.answer_options || ['A','B','C','D','E','F'];
         TASKS[tn].qs       = (t.questions || []).map(function(q) { return { q: q }; });
+        // Some PDFs include text/intro for match tasks
+        if (t.text) TASKS[tn].text = t.text;
       } else if (t.type === 'gapfill4') {
         TASKS[tn].wordBank = t.word_bank || {};
         TASKS[tn].opts     = t.answer_options || ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
@@ -2588,10 +2595,21 @@ function renewExam(code) {
   if (!ex) return;
 
   // Restore parsed exam content from stored data
-  if (ex.parsedExam) {
+  if (ex.parsedExam && ex.parsedExam.tasks && ex.parsedExam.tasks.length) {
     S.parsedExam  = ex.parsedExam;
     S.parsedTasks = ex.parsedExam.tasks || [];
     applyParsedExam(ex.parsedExam, ex.title);
+  } else if (ex.tasks && ex.tasks.length) {
+    // Fallback: rebuild from tasks array stored in exam
+    S.parsedTasks = ex.tasks;
+    for (var rti=0; rti<ex.tasks.length; rti++) {
+      var rt = ex.tasks[rti];
+      var rtn = rti + 1;
+      if (!TASKS[rtn]) TASKS[rtn] = {};
+      TASKS[rtn].type  = rt.type  || TASKS[rtn].type  || '';
+      TASKS[rtn].pts   = rt.pts   || TASKS[rtn].pts   || 0;
+      TASKS[rtn].title = 'Task ' + rtn;
+    }
   }
 
   // Restore answer key
@@ -2621,15 +2639,23 @@ function renewExam(code) {
   onDrumScroll('hours');
   onDrumScroll('minutes');
 
-  // Show PDF parsed result if we have parsed content
+  // Show parsed result section
+  var summEl  = document.getElementById('parsed-summary');
+  var statusEl= document.getElementById('pdf-status');
+  var resultEl= document.getElementById('pdf-parsed-result');
+  var previewEl= document.getElementById('pdf-preview');
+  var nameEl  = document.getElementById('pdf-name');
   if (ex.parsedExam && ex.parsedExam.tasks && ex.parsedExam.tasks.length) {
     var parts = [];
-    for (var i=0;i<ex.parsedExam.tasks.length;i++) parts.push('Task '+ ex.parsedExam.tasks[i].task+' ('+( ex.parsedExam.tasks[i].question_count||0)+'q)');
-    var summEl = document.getElementById('parsed-summary');
-    var statusEl = document.getElementById('pdf-status');
-    var resultEl = document.getElementById('pdf-parsed-result');
-    if (summEl) summEl.textContent = 'Restored: ' + parts.join(', ') + (ex.parsedExam.hasIntro?' + Intro':'');
+    for (var i2=0;i2<ex.parsedExam.tasks.length;i2++) parts.push('Task '+ex.parsedExam.tasks[i2].task+' ('+(ex.parsedExam.tasks[i2].question_count||0)+'q)');
+    if (summEl)  summEl.textContent  = 'Restored: ' + parts.join(', ') + (ex.parsedExam.hasIntro?' + Intro':'');
     if (statusEl) statusEl.textContent = 'Restored from previous exam';
+    if (resultEl) resultEl.style.display = 'block';
+    if (previewEl) previewEl.style.display = 'block';
+    if (nameEl)  nameEl.textContent = ex.title + ' (restored)';
+  } else {
+    if (summEl)  summEl.textContent  = 'No PDF content saved — please upload a PDF to extract questions.';
+    if (statusEl) statusEl.textContent = 'No PDF';
     if (resultEl) resultEl.style.display = 'block';
   }
 
