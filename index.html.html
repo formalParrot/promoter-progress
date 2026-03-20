@@ -3061,19 +3061,6 @@ function buildPreviewContent() {
       h += '<textarea id="pedit-text-'+tn2+'" rows="6" style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:Georgia,serif;resize:vertical;">'+escapeAttr(tk2.text||'')+'</textarea>';
       h += '</div>';
     }
-    // Match passages editing
-    if (tk2.type==='match' && tk2.passages && Object.keys(tk2.passages).length) {
-      h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);display:block;margin-bottom:8px;">Paragraphs</label>';
-      var pkk=Object.keys(tk2.passages);
-      for (var pki=0;pki<pkk.length;pki++) {
-        h += '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-start;">';
-        h += '<span style="font-size:12px;font-weight:700;color:var(--pink);min-width:20px;margin-top:8px;">'+pkk[pki]+'.</span>';
-        h += '<textarea rows="3" onchange="previewEditPassage('+tn2+',\''+pkk[pki]+'\',this.value)" style="flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:Georgia,serif;resize:vertical;">'+escapeAttr(tk2.passages[pkk[pki]]||'')+'</textarea>';
-        h += '</div>';
-      }
-      h += '</div>';
-    }
-
     // MCQ tasks (listening, reading, match)
     if (tk2.qs && tk2.qs.length && !isEssay2) {
       h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);margin-bottom:10px;">Questions &amp; Answer Key</div>';
@@ -3107,6 +3094,18 @@ function buildPreviewContent() {
         }
         h += '</div>';
       }
+    }
+    // Match passages editing
+    if (tk2.type==='match' && tk2.passages && Object.keys(tk2.passages).length) {
+      h += '<div style="margin-bottom:14px;"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);display:block;margin-bottom:8px;">Paragraphs</label>';
+      var pkk=Object.keys(tk2.passages);
+      for (var pki=0;pki<pkk.length;pki++) {
+        h += '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-start;">';
+        h += '<span style="font-size:12px;font-weight:700;color:var(--pink);min-width:20px;margin-top:8px;">'+pkk[pki]+'.</span>';
+        h += '<textarea rows="3" onchange="previewEditPassage('+tn2+',\''+pkk[pki]+'\',this.value)" style="flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:Georgia,serif;resize:vertical;">'+escapeAttr(tk2.passages[pkk[pki]]||'')+'</textarea>';
+        h += '</div>';
+      }
+      h += '</div>';
     }
 
     // Gapfill4: word bank + answer key dropdowns
