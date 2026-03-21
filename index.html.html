@@ -1547,38 +1547,56 @@ async function doUnlock() {
 }
 
 // EXAM
+function _runExamTimer(examCode, startTimeLeft) {
+  clearInterval(S.timerInt);
+  S.timeLeft = startTimeLeft;
+  if (S.timeLeft <= 0) { showTimesUp(); return; }
+  // Save current state to Supabase
+  dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
+  S.timerInt = setInterval(function(){
+    if (S.timerPaused) return;
+    S.timeLeft--;
+    if (S.timeLeft <= 0) { clearInterval(S.timerInt); showTimesUp(); return; }
+    var h=Math.floor(S.timeLeft/3600), m=Math.floor((S.timeLeft%3600)/60), s=S.timeLeft%60;
+    var el=document.getElementById('exam-timer');
+    if (el) { el.textContent=h+':'+pad(m)+':'+pad(s); el.className='exam-timer'+(S.timeLeft<600?' danger':S.timeLeft<1800?' warn':''); }
+    // Sync to Supabase every 20 seconds
+    if (S.timeLeft % 20 === 0) {
+      dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
+    }
+  }, 1000);
+}
+
 function startExam(isReEntry){
   showPage('page-exam'); buildSidebar();
   var _hasIntro = S.parsedExam && S.parsedExam.hasIntro;
   gotoTask(_hasIntro ? 0 : 1);
   var _activeEx = S.activeExamCode && S.exams[S.activeExamCode];
   var _examDur  = _activeEx ? (_activeEx.duration || 150) : 150;
-  // On re-entry, calculate remaining time from exam start time
-  if (isReEntry && S.examStartTime) {
-    var _elapsed = Math.floor((Date.now() - S.examStartTime) / 1000);
-    var _totalSecs = _examDur * 60;
-    S.timeLeft = Math.max(0, _totalSecs - _elapsed);
-  } else {
-    S.timeLeft = _examDur * 60;
-    S.examStartTime = Date.now();
-  }
+  var _examCode = S.activeExamCode;
+  var _totalSecs = _examDur * 60;
   clearInterval(S.timerInt);
-  if (S.timeLeft <= 0) { showTimesUp(); return; }
-  // Save initial timer state to Supabase
-  if (S.activeExamCode) {
-    dbUpsert('timer_state',{exam_code:S.activeExamCode, time_left:S.timeLeft, paused:false, started_at:Date.now()},'exam_code');
+
+  if (isReEntry) {
+    // Read remaining time from Supabase timer_state
+    dbGet('timer_state', {exam_code: _examCode}).then(function(rows) {
+      var startLeft = _totalSecs;
+      if (rows.length) {
+        var ts = rows[0];
+        if (ts.paused) {
+          startLeft = ts.time_left || _totalSecs;
+        } else {
+          // elapsed since last sync
+          var elapsed = ts.started_at ? Math.floor((Date.now() - ts.started_at) / 1000) : 0;
+          startLeft = Math.max(0, (ts.time_left || _totalSecs) - elapsed);
+        }
+      }
+      _runExamTimer(_examCode, startLeft);
+    });
+  } else {
+    S.examStartTime = Date.now();
+    _runExamTimer(_examCode, _totalSecs);
   }
-  S.timerInt=setInterval(function(){
-    S.timeLeft--;
-    if(S.timeLeft<=0){clearInterval(S.timerInt);showTimesUp();return;}
-    var h=Math.floor(S.timeLeft/3600),m=Math.floor((S.timeLeft%3600)/60),s=S.timeLeft%60;
-    var el=document.getElementById('exam-timer');
-    if(el){el.textContent=h+':'+pad(m)+':'+pad(s);el.className='exam-timer'+(S.timeLeft<600?' danger':S.timeLeft<1800?' warn':'');}
-    // Sync to Supabase every 30 seconds
-    if (S.timeLeft % 30 === 0 && S.activeExamCode) {
-      dbUpsert('timer_state',{exam_code:S.activeExamCode, time_left:S.timeLeft, paused:false, started_at:Date.now()},'exam_code');
-    }
-  },1000);
   if(window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   if(S.pdfFile&&window.pdfjsLib){
     var reader=new FileReader();
@@ -1828,8 +1846,14 @@ function renderTask(n){
   h+='</div>';
 
   // Determine last task number dynamically
-  var _tkeys2 = Object.keys(TASKS).map(Number).filter(function(k){return k>=1 && TASKS[k] && TASKS[k].type;});
-  var _lastTask = _tkeys2.length ? Math.max.apply(null,_tkeys2) : 7;
+  // Use parsedExam task count if available (most reliable)
+  var _lastTask = 7;
+  if (S.parsedExam && S.parsedExam.tasks && S.parsedExam.tasks.length) {
+    _lastTask = S.parsedExam.tasks.length;
+  } else {
+    var _tkeys2 = Object.keys(TASKS).map(Number).filter(function(k){return k>=1 && TASKS[k] && TASKS[k].type;});
+    if (_tkeys2.length) _lastTask = Math.max.apply(null, _tkeys2);
+  }
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
   if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
@@ -1967,9 +1991,12 @@ function sidebarClick(key,q,letter,el){
   }
 }
 function updWC(){
-  var ta=document.getElementById('essay-ta'); if(!ta) return;
+  var ta=document.getElementById('essay-ta-'+S.curTask);
+  if(!ta) ta=document.getElementById('essay-ta');
+  if(!ta) return;
   var w=ta.value.trim()===''?0:ta.value.trim().split(/\s+/).length;
   var el=document.getElementById('wc');
+  if(!el) return;
   el.className='wcount'+(w>=120&&w<=170?' good':w>170?' over':'');
   el.textContent=w+' words (120-170 required)';
 }
@@ -2174,7 +2201,7 @@ function applyParsedExam(parsed, fname) {
         TASKS[tn].qcount      = t.question_count || 12;
       } else if (t.type === 'dialogue') {
         TASKS[tn].dialogue      = t.dialogue || [];
-        TASKS[tn].dialogueSents = t.options || {};
+        TASKS[tn].dialogueSents = t.options || t.sentence_options || t.sentences || {};
         TASKS[tn].opts          = t.answer_options || ['A','B','C','D','E','F','G','H'];
       } else if (t.type === 'essay' || t.type === 'writing') {
         TASKS[tn].prompt = t.prompt || '';
@@ -2793,15 +2820,10 @@ function doExamAction() {
   if (action === 'pause') {
     if (S.timerPaused) {
       S.timerPaused = false;
-      S.timerInt = setInterval(function() {
-        if (S.timerPaused) return;
-        S.timeLeft--;
-        if (S.timeLeft <= 0) { clearInterval(S.timerInt); showTimesUp(); return; }
-        var h=Math.floor(S.timeLeft/3600), m=Math.floor((S.timeLeft%3600)/60), s=S.timeLeft%60;
-        var el = document.getElementById('exam-timer');
-        if (el) { el.textContent=h+':'+pad(m)+':'+pad(s); el.className='exam-timer'+(S.timeLeft<600?' danger':S.timeLeft<1800?' warn':''); }
-      }, 1000);
-      if (S.activeExamCode) dbUpsert('timer_state',{exam_code:S.activeExamCode, time_left:S.timeLeft, paused:false, started_at:Date.now()},'exam_code');
+      if (S.activeExamCode) {
+        dbUpsert('timer_state',{exam_code:S.activeExamCode, time_left:S.timeLeft, paused:false, started_at:Date.now()},'exam_code');
+        _runExamTimer(S.activeExamCode, S.timeLeft);
+      }
       showToast('Timer resumed', 'success');
     } else {
       S.timerPaused = true;
@@ -4220,4 +4242,3 @@ function renderSchedTable(){
 </script>
 </body>
 </html>
-
