@@ -1146,7 +1146,12 @@ async function dbGet(table, filters) {
   try { var q=sb.from(table).select('*'); if(filters){for(var k in filters)q=q.eq(k,filters[k]);} var {data,error}=await q; if(error){console.error('dbGet',table,error);return[];} return data||[]; } catch(e){console.error('dbGet err',e);return[];}
 }
 async function dbUpsert(table, row, conflict) {
-  try { var q=sb.from(table).upsert(row,conflict?{onConflict:conflict}:{}); var {error}=await q; if(error){console.error('dbUpsert',table,error);return false;} return true; } catch(e){console.error('dbUpsert err',e);return false;}
+  try {
+    var q = sb.from(table).upsert(row, conflict ? {onConflict:conflict} : {});
+    var {data, error} = await q;
+    if (error) { console.error('dbUpsert ERROR', table, error.message, error.details, error.hint); return false; }
+    return true;
+  } catch(e) { console.error('dbUpsert EXCEPTION', table, e); return false; }
 }
 async function dbInsert(table, row) {
   try { var {error}=await sb.from(table).insert(row); if(error){console.error('dbInsert',table,error);return false;} return true; } catch(e){console.error('dbInsert err',e);return false;}
@@ -2216,22 +2221,41 @@ async function saveExam(){
   if (!title||!code) { showToast('Please fill in exam title and code',''); return; }
   var upperCode = code.toUpperCase();
   var pts = document.getElementById('eb-pts') ? (parseInt(document.getElementById('eb-pts').value)||70) : 70;
-  await dbUpsert('exams',{code:upperCode, title:title, duration:duration, info:infoText, has_audio:false, tasks:S.parsedTasks||[], parsed_exam:S.parsedExam||null, answer_key:S.answerKey||{}, pts:pts},'code');
+
+  // Save exam — strip parsed_exam to reduce payload size if too large
+  var parsedExamToSave = S.parsedExam || null;
+  var examRow = {code:upperCode, title:title, duration:duration, info:infoText, has_audio:false, tasks:S.parsedTasks||[], answer_key:S.answerKey||{}, pts:pts};
+  // Try with parsed_exam first, fall back without if it fails
+  var ok = await dbUpsert('exams', Object.assign({}, examRow, {parsed_exam:parsedExamToSave}), 'code');
+  if (!ok) {
+    showToast('Warning: Could not save full exam data. Trying without PDF content...','');
+    ok = await dbUpsert('exams', Object.assign({}, examRow, {parsed_exam:null}), 'code');
+    if (!ok) { showToast('Error saving exam to database. Please try again.',''); return; }
+  }
+
   S.examCodes[upperCode]=true;
   S.exams[upperCode]={title:title, code:upperCode, duration:duration, hasAudio:false, tasks:S.parsedTasks||[], info:infoText, pts:pts};
+
   if (window._ebGeneratedIDs&&window._ebGeneratedIDs.length) {
     S.examIDs[upperCode]=window._ebGeneratedIDs.slice();
     for (var ii=0;ii<window._ebGeneratedIDs.length;ii++) {
       await dbUpsert('exam_ids',{exam_code:upperCode, student_id:window._ebGeneratedIDs[ii], used:false},'exam_code,student_id');
     }
   }
+
   if (dateEl&&dateEl.value) {
     var t=timeEl?timeEl.value:'10:00';
     S.schedule[upperCode]={date:dateEl.value, time:t, title:title, duration:duration};
-    await dbUpsert('schedule',{exam_code:upperCode, date:dateEl.value, time:t, duration:duration},'exam_code');
+    var schedOk = await dbUpsert('schedule',{exam_code:upperCode, date:dateEl.value, time:t, duration:duration},'exam_code');
+    if (!schedOk) { showToast('Warning: Exam saved but schedule may not have saved correctly.',''); }
+  } else {
+    showToast('Note: No date set — exam saved as draft without a schedule.','');
   }
+
   showToast('Exam saved!','success');
   renderExamList();
+  renderSchedTable();
+  updateAdminDashboard();
   hideExamBuilder();
 }
 function buildAK(){
