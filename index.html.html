@@ -1646,16 +1646,19 @@ function renderTask(n){
 
   if(task.type==='listening'){
     h+='<p class="task-instr">'+(task.instructions||'Listen and mark the correct answer A, B, C or D.')+'</p>';
-    var _audioSrc = window.S_audioURL || '';
-    h+='<audio id="task-audio" src="'+_audioSrc+'" preload="metadata" style="display:none;"></audio>';
-    h+='<div class="audio-player">';
-    h+='<button class="audio-btn" onclick="playAudio(this)">';
-    h+='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-    h+='</button>';
-    h+='<div class="audio-bar"><div class="audio-prog" id="ap"></div></div>';
-    h+='<span class="audio-time" id="audio-time-display">0:00 / 0:00</span>';
-    if (!_audioSrc) h+='<span style="font-size:11px;color:var(--gray-400);margin-left:6px;">(No audio uploaded)</span>';
-    h+='</div>';
+    var _audioSrc = window.S_audioURL || S.audioURL || '';
+    if (_audioSrc) {
+      h+='<audio id="task-audio" src="'+_audioSrc+'" preload="metadata" style="display:none;"></audio>';
+      h+='<div class="audio-player">';
+      h+='<button class="audio-btn" onclick="playAudio(this)">';
+      h+='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      h+='</button>';
+      h+='<div class="audio-bar"><div class="audio-prog" id="ap"></div></div>';
+      h+='<span class="audio-time" id="audio-time-display">0:00 / 0:00</span>';
+      h+='</div>';
+    } else {
+      h+='<div style="background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--gray-500);margin-bottom:16px;">Audio will be played during the exam. Please wait for instructions.</div>';
+    }
     for(var i=0;i<task.qs.length;i++){
       var q=task.qs[i];
       h+='<div class="q-block"><div class="q-text"><span class="q-num-inline">'+(i+1)+'.</span> '+q.q+'</div><div class="opts">';
@@ -1668,10 +1671,7 @@ function renderTask(n){
   }
   if(task.type==='match'){
     h+='<p class="task-instr">'+(task.instructions||'Read the questions and find answers in the paragraphs.')+'</p>';
-    h+='<div class="reading-box">';
-    var pk=Object.keys(task.passages||{});
-    for(var pi=0;pi<pk.length;pi++) h+='<p><strong>'+pk[pi]+'.</strong> '+task.passages[pk[pi]]+'</p>';
-    h+='</div>';
+    // Questions first
     for(var i=0;i<task.qs.length;i++){
       var selLet=S.answers['t'+n]&&S.answers['t'+n][i+1]?S.answers['t'+n][i+1]:'';
       h+='<div class="q-block"><div class="q-text"><span class="q-num-inline">'+(i+1)+'.</span> '+task.qs[i].q+'</div>';
@@ -1682,6 +1682,11 @@ function renderTask(n){
       }
       h+='</div></div>';
     }
+    // Passages after questions
+    h+='<div class="reading-box" style="margin-top:16px;">';
+    var pk=Object.keys(task.passages||{});
+    for(var pi=0;pi<pk.length;pi++) h+='<p><strong>'+pk[pi]+'.</strong> '+task.passages[pk[pi]]+'</p>';
+    h+='</div>';
   }
   if(task.type==='reading'){
     h+='<p class="task-instr">'+(task.instructions||'Read the text and mark the correct answer A, B, C or D.')+'</p>';
@@ -1820,13 +1825,8 @@ function renderTask(n){
   h+='</div>';
 
   // Determine last task number dynamically
-  var _lastTask = 7;
-  if (S.parsedExam && S.parsedExam.tasks && S.parsedExam.tasks.length) {
-    _lastTask = S.parsedExam.tasks.length;
-  } else {
-    var _tkeys = Object.keys(TASKS).map(Number).filter(function(k){return k>=1;});
-    if (_tkeys.length) _lastTask = Math.max.apply(null, _tkeys);
-  }
+  var _tkeys2 = Object.keys(TASKS).map(Number).filter(function(k){return k>=1 && TASKS[k] && TASKS[k].type;});
+  var _lastTask = _tkeys2.length ? Math.max.apply(null,_tkeys2) : 7;
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
   if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
@@ -1835,7 +1835,7 @@ function renderTask(n){
 
   main.innerHTML=h;
   if(S.pdfDoc) renderPdfPage(n+1,'pdf-canvas-'+n);
-  if(task && task.type==='gapfill4') initDragDrop();
+  if(task && task.type==='gapfill4') { setTimeout(initDragDrop, 50); }
   if(task.type==='essay'||task.type==='writing'){
     var _taId='essay-ta-'+n;
     var ta=document.getElementById(_taId);
@@ -3310,7 +3310,7 @@ function previewEditDialogue(tn, key, val) {
 
 function previewSaveEdits() {
   var introTa=document.getElementById('pedit-intro'); if(introTa&&S.parsedExam) S.parsedExam.introText=introTa.value;
-  var taskKeys = Object.keys(TASKS).map(Number).filter(function(k){ return k >= 1; });
+  var taskKeys = Object.keys(TASKS).map(Number).filter(function(k){ return k >= 1 && TASKS[k] && TASKS[k].type; });
   for (var ti = 0; ti < taskKeys.length; ti++) {
     var tn = taskKeys[ti];
     var ta = document.getElementById('pedit-text-' + tn);
@@ -3318,22 +3318,36 @@ function previewSaveEdits() {
     var tp = document.getElementById('pedit-prompt-' + tn);
     if (tp && TASKS[tn]) TASKS[tn].prompt = tp.value;
   }
-  // Sync updated pts and instructions back to parsedTasks
-  if (S.parsedTasks) {
-    for (var pi3=0;pi3<S.parsedTasks.length;pi3++) {
-      var tn3 = S.parsedTasks[pi3].task;
-      if (TASKS[tn3]) {
-        S.parsedTasks[pi3].points = TASKS[tn3].pts;
-        S.parsedTasks[pi3].instructions = TASKS[tn3].instructions;
-      }
+  // Sync ALL changes from TASKS back to S.parsedExam and S.parsedTasks
+  if (S.parsedExam && S.parsedExam.tasks) {
+    for (var pi3=0; pi3<S.parsedExam.tasks.length; pi3++) {
+      var tn3 = S.parsedExam.tasks[pi3].task;
+      var tk3 = TASKS[tn3];
+      if (!tk3) continue;
+      // Sync every field
+      S.parsedExam.tasks[pi3].points       = tk3.pts;
+      S.parsedExam.tasks[pi3].instructions = tk3.instructions || '';
+      if (tk3.text !== undefined)         S.parsedExam.tasks[pi3].text         = tk3.text;
+      if (tk3.prompt !== undefined)       S.parsedExam.tasks[pi3].prompt       = tk3.prompt;
+      if (tk3.qs)                         S.parsedExam.tasks[pi3].questions    = tk3.qs.map(function(q){return q.q;});
+      if (tk3.qs)                         S.parsedExam.tasks[pi3].options      = tk3.qs.map(function(q){return q.os||[];});
+      if (tk3.passages)                   S.parsedExam.tasks[pi3].passages     = tk3.passages;
+      if (tk3.wordBank)                   S.parsedExam.tasks[pi3].word_bank    = tk3.wordBank;
+      if (tk3.wordChoices)                S.parsedExam.tasks[pi3].choices      = tk3.wordChoices;
+      if (tk3.dialogue)                   S.parsedExam.tasks[pi3].dialogue     = tk3.dialogue;
+      if (tk3.dialogueSents)              S.parsedExam.tasks[pi3].options      = tk3.dialogueSents;
     }
+    S.parsedTasks = S.parsedExam.tasks;
   }
-  // Save answer key to active exam in DB
-  if (S.activeExamCode || (S.parsedExam && S.examCodes)) {
-    var examCode = S.activeExamCode || Object.keys(S.examCodes)[0];
-    if (examCode && S.exams[examCode]) {
-      dbUpdate('exams', {answer_key: S.answerKey||{}}, {code: examCode});
-    }
+  // Save everything to Supabase immediately
+  var examCode = S.activeExamCode || (S.examCodes ? Object.keys(S.examCodes)[0] : null);
+  if (examCode && S.exams[examCode]) {
+    dbUpsert('exams', {
+      code: examCode,
+      parsed_exam: S.parsedExam,
+      tasks: S.parsedTasks || [],
+      answer_key: S.answerKey || {}
+    }, 'code');
   }
   showToast('Changes saved!', 'success');
   closeExamPreview();
@@ -3416,6 +3430,7 @@ function handleAudioUpload(e) {
   if (window.S_audioURL) URL.revokeObjectURL(window.S_audioURL);
   window.S_audioFile = file;
   window.S_audioURL  = URL.createObjectURL(file);
+  S.audioURL = window.S_audioURL;
   // Update the preview player in the builder
   var player = document.getElementById('audio-player');
   if (player) { player.src = window.S_audioURL; player.style.display = 'block'; }
