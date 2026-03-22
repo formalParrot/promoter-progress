@@ -2060,6 +2060,7 @@ function renderTask(n){
   if (_submitBtn) {
     var _doShowConfirm = function(e) {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      alert('SUBMIT CLICKED');
       disableExamProtection();
       document.body.classList.remove('exam-active');
       var ov = document.getElementById('submit-confirm-overlay');
