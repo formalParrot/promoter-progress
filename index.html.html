@@ -17,6 +17,8 @@ input,textarea,select{-webkit-user-select:text!important;user-select:text!import
 /* During exam — lock everything except essay textarea */
 body.exam-active *{-webkit-user-select:none!important;-moz-user-select:none!important;-ms-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;}
 body.exam-active textarea.essay-ta{-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default!important;}
+body.exam-active button{pointer-events:auto!important;cursor:pointer!important;-webkit-user-select:none!important;touch-action:manipulation!important;}
+body.exam-active select{pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important;}
 .page{display:none;}
 .page.active{display:flex;width:100%;min-height:100vh;}
 #page-auth.active{flex-direction:column;align-items:center;justify-content:center;}
@@ -2049,10 +2051,29 @@ function renderTask(n){
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
   if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
-  else h+='<button type="button" class="geo-btn geo-btn-pink" style="min-width:160px;" onclick="(function(){disableExamProtection();document.body.classList.remove(\'exam-active\');var ov=document.getElementById(\'submit-confirm-overlay\');if(ov){ov.style.display=\'flex\';ov.style.position=\'fixed\';ov.style.top=\'0\';ov.style.left=\'0\';ov.style.right=\'0\';ov.style.bottom=\'0\';ov.style.zIndex=\'10000\';}})()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+  else h+='<button type="button" id="submit-btn-final" class="geo-btn geo-btn-pink" style="min-width:160px;touch-action:manipulation;" onclick="(function(){disableExamProtection();document.body.classList.remove(\'exam-active\');var ov=document.getElementById(\'submit-confirm-overlay\');if(ov){ov.style.display=\'flex\';ov.style.position=\'fixed\';ov.style.top=\'0\';ov.style.left=\'0\';ov.style.right=\'0\';ov.style.bottom=\'0\';ov.style.zIndex=\'10000\';}})()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
   h+='</div>';
 
   main.innerHTML=h;
+  // Attach submit button listener directly (works even when onclick is blocked)
+  var _submitBtn = document.getElementById('submit-btn-final');
+  if (_submitBtn) {
+    var _doShowConfirm = function(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      disableExamProtection();
+      document.body.classList.remove('exam-active');
+      var ov = document.getElementById('submit-confirm-overlay');
+      if (ov) {
+        ov.style.display = 'flex';
+        ov.style.position = 'fixed';
+        ov.style.top = '0'; ov.style.left = '0';
+        ov.style.right = '0'; ov.style.bottom = '0';
+        ov.style.zIndex = '10000';
+      }
+    };
+    _submitBtn.addEventListener('click', _doShowConfirm, true);
+    _submitBtn.addEventListener('touchend', _doShowConfirm, true);
+  }
   if(S.pdfDoc) renderPdfPage(n+1,'pdf-canvas-'+n);
   if(task && task.type==='gapfill4') { setTimeout(initDragDrop, 50); }
   if(task.type==='essay'||task.type==='writing'){
