@@ -1036,7 +1036,7 @@ tbody tr:hover{background:var(--gray-50);}
 
 
 <!-- ===== TIMES UP OVERLAY ===== -->
-<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:7000;align-items:center;justify-content:center;padding:20px;">
+<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:slideUp .3s ease;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">⏰</div>
     <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:10px;color:var(--pink);">Time's Up!</div>
@@ -1046,7 +1046,7 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT CONFIRM OVERLAY ===== -->
-<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .25s ease;text-align:center;">
     <div style="font-size:40px;margin-bottom:12px;">📋</div>
     <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:10px;">Submit Exam?</div>
@@ -1059,7 +1059,7 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT SUCCESS OVERLAY ===== -->
-<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:6000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .3s ease;text-align:center;">
     <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">✓</div>
     <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:10px;">Exam Submitted!</div>
@@ -1550,9 +1550,10 @@ async function doUnlock() {
 // EXAM
 function _runExamTimer(examCode, startTimeLeft) {
   clearInterval(S.timerInt);
+  S.timerPaused = false;
   S.timeLeft = startTimeLeft;
   if (S.timeLeft <= 0) { showTimesUp(); return; }
-  // Save current state to Supabase
+  // Only update Supabase if we're actually running (not called from a pause resume chain)
   dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
   S.timerInt = setInterval(function(){
     if (S.timerPaused) return;
@@ -1561,34 +1562,38 @@ function _runExamTimer(examCode, startTimeLeft) {
     var h=Math.floor(S.timeLeft/3600), m=Math.floor((S.timeLeft%3600)/60), s=S.timeLeft%60;
     var el=document.getElementById('exam-timer');
     if (el) { el.textContent=h+':'+pad(m)+':'+pad(s); el.className='exam-timer'+(S.timeLeft<600?' danger':S.timeLeft<1800?' warn':''); }
-    // Sync to Supabase every 20 seconds
-    if (S.timeLeft % 20 === 0) {
+    // Sync to Supabase every 15 seconds
+    if (S.timeLeft % 15 === 0) {
       dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
     }
-    // Check Supabase every 5 seconds for admin pause/adjust
-    if (S.timeLeft % 5 === 0) {
+    // Check Supabase every 3 seconds for admin pause/adjust
+    if (S.timeLeft % 3 === 0) {
       (function(curLeft){
         dbGet('timer_state', {exam_code:examCode}).then(function(rows) {
           if (!rows.length) return;
           var ts = rows[0];
-          // Admin paused
+          // Admin paused — stop our timer but don't touch Supabase
           if (ts.paused && !S.timerPaused) {
             S.timerPaused = true;
             clearInterval(S.timerInt);
-            showToast('Timer paused by invigilator', '');
+            showToast('Exam paused by invigilator', '');
           }
-          // Admin resumed
+          // Admin resumed — restart with correct time from DB
           if (!ts.paused && S.timerPaused) {
-            var el2=ts.started_at?Math.floor((Date.now()-ts.started_at)/1000):0;
+            var elapsed2 = ts.started_at ? Math.floor((Date.now()-ts.started_at)/1000) : 0;
+            var newLeft = Math.max(0, (ts.time_left||curLeft) - elapsed2);
             S.timerPaused = false;
-            _runExamTimer(examCode, Math.max(0,(ts.time_left||curLeft)-el2));
-            showToast('Timer resumed by invigilator', 'success');
+            _runExamTimer(examCode, newLeft);
+            showToast('Exam resumed by invigilator', 'success');
           }
-          // Admin adjusted time (difference > 60s)
+          // Admin adjusted time — sync if difference > 30s
           if (!ts.paused && !S.timerPaused) {
-            var el3=ts.started_at?Math.floor((Date.now()-ts.started_at)/1000):0;
-            var adminLeft=Math.max(0,ts.time_left-el3);
-            if (Math.abs(adminLeft-curLeft)>60) { S.timeLeft=adminLeft; }
+            var elapsed3 = ts.started_at ? Math.floor((Date.now()-ts.started_at)/1000) : 0;
+            var adminLeft = Math.max(0, ts.time_left - elapsed3);
+            if (Math.abs(adminLeft - curLeft) > 30) {
+              S.timeLeft = adminLeft;
+              if (S.timeLeft <= 0) { clearInterval(S.timerInt); showTimesUp(); }
+            }
           }
         });
       })(S.timeLeft);
@@ -1613,14 +1618,38 @@ function startExam(isReEntry){
       if (rows.length) {
         var ts = rows[0];
         if (ts.paused) {
+          // Exam is currently paused — show paused state, wait for resume
           startLeft = ts.time_left || _totalSecs;
+          S.timeLeft = startLeft;
+          S.timerPaused = true;
+          // Show timer but don't start it
+          var h=Math.floor(startLeft/3600), m=Math.floor((startLeft%3600)/60), s=startLeft%60;
+          var el=document.getElementById('exam-timer');
+          if (el) { el.textContent=h+':'+pad(m)+':'+pad(s); el.className='exam-timer warn'; }
+          showToast('Exam is currently paused by invigilator', '');
+          // Poll every 3 seconds until resumed
+          var _pollInt = setInterval(function() {
+            dbGet('timer_state', {exam_code:_examCode}).then(function(rows2) {
+              if (!rows2.length || !rows2[0].paused) {
+                clearInterval(_pollInt);
+                var ts2 = rows2[0] || {};
+                var elapsed2 = ts2.started_at ? Math.floor((Date.now()-ts2.started_at)/1000) : 0;
+                var resumeLeft = Math.max(0, (ts2.time_left || startLeft) - elapsed2);
+                S.timerPaused = false;
+                _runExamTimer(_examCode, resumeLeft);
+                showToast('Exam resumed', 'success');
+              }
+            });
+          }, 3000);
         } else {
-          // elapsed since last sync
+          // Running — calculate remaining time
           var elapsed = ts.started_at ? Math.floor((Date.now() - ts.started_at) / 1000) : 0;
           startLeft = Math.max(0, (ts.time_left || _totalSecs) - elapsed);
+          _runExamTimer(_examCode, startLeft);
         }
+      } else {
+        _runExamTimer(_examCode, startLeft);
       }
-      _runExamTimer(_examCode, startLeft);
     });
   } else {
     S.examStartTime = Date.now();
@@ -1684,7 +1713,37 @@ function renderTask(n){
     return;
   }
 
-  var task=TASKS[n];if(!task) return;
+  var task=TASKS[n];
+  // If TASKS not populated yet, try to apply parsedExam
+  if (!task && S.parsedExam && S.parsedExam.tasks) {
+    applyParsedExam(S.parsedExam, '');
+    task = TASKS[n];
+  }
+  // If still no task, check S.exams for tasks array
+  if (!task && S.activeExamCode && S.exams[S.activeExamCode] && S.exams[S.activeExamCode].tasks) {
+    var _exTasks = S.exams[S.activeExamCode].tasks;
+    if (_exTasks[n-1]) {
+      TASKS[n] = {
+        title: 'Task ' + n,
+        type:  _exTasks[n-1].type || 'reading',
+        pts:   _exTasks[n-1].pts  || _exTasks[n-1].points || 0,
+        instructions: _exTasks[n-1].instructions || '',
+        qs: [],
+        opts: ['A','B','C','D']
+      };
+      task = TASKS[n];
+    }
+  }
+  if (!task) {
+    // Last resort — show submit button so student isn't stuck
+    var h2 = '<div class="task-card"><p style="color:var(--gray-400);text-align:center;padding:40px;">Loading task...</p></div>';
+    h2 += '<div class="exam-nav-btns">';
+    if(n>0) h2 += '<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
+    h2 += '<button type="button" class="geo-btn geo-btn-pink" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+    h2 += '</div>';
+    main.innerHTML = h2;
+    return;
+  }
   if(task.type==='sheet'){renderSheet(main);return;}
 
   var h='<div class="task-card">';
