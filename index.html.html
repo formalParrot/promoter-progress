@@ -1523,10 +1523,24 @@ async function doUnlock() {
   // Check student ID registered
   var idRows = await dbGet('exam_ids', {exam_code:code, student_id:id});
   if (!idRows.length) { err.textContent='Your ID is not registered for this exam.'; err.style.display='block'; return; }
-  // Check already submitted
+  // Check if this ID is already used by a DIFFERENT student
+  if (idRows[0].used) {
+    var usedByEmail = idRows[0].student_email || null;
+    if (usedByEmail && S.student && usedByEmail !== S.student.email) {
+      err.textContent='This ID is already in use by another student.'; err.style.display='block'; return;
+    }
+    if (!usedByEmail && !S.student) {
+      // No way to verify — block for safety
+      err.textContent='This ID has already been used.'; err.style.display='block'; return;
+    }
+  }
+  // Check already submitted by THIS student
   if (S.student) {
     var subRows = await dbGet('submissions', {student_email:S.student.email, exam_code:code});
-    if (subRows.length) { err.textContent='This exam has already been submitted.'; err.style.display='block'; return; }
+    // Only block if it's a real submission (not an autosave in_progress)
+    if (subRows.length && subRows[0].elapsed_str !== 'in_progress') {
+      err.textContent='This exam has already been submitted.'; err.style.display='block'; return;
+    }
   }
   // Load exam data
   var ex = examRows[0];
@@ -1540,7 +1554,9 @@ async function doUnlock() {
   if (schedRows.length) S.schedule[code] = {date:schedRows[0].date, time:schedRows[0].time, duration:schedRows[0].duration||150, title:ex.title};
   // Mark used
   var isReEntry = idRows[0].used;
-  if (!isReEntry) await dbUpdate('exam_ids', {used:true}, {exam_code:code, student_id:id});
+  if (!isReEntry && S.student) {
+    await dbUpdate('exam_ids', {used:true, student_email:S.student.email}, {exam_code:code, student_id:id});
+  }
   S.usedIDs[code+':'+id] = true;
   S.activeExamCode = code;
   closeOverlay('unlock-modal');
@@ -1553,8 +1569,21 @@ function _runExamTimer(examCode, startTimeLeft) {
   S.timerPaused = false;
   S.timeLeft = startTimeLeft;
   if (S.timeLeft <= 0) { showTimesUp(); return; }
-  // Only update Supabase if we're actually running (not called from a pause resume chain)
-  dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
+  // Check if admin has paused before we start running
+  dbGet('timer_state', {exam_code:examCode}).then(function(rows) {
+    if (rows.length && rows[0].paused) {
+      // Admin has paused — don't start, just show current time
+      S.timerPaused = true;
+      var tl = rows[0].time_left || S.timeLeft;
+      S.timeLeft = tl;
+      var h2=Math.floor(tl/3600),m2=Math.floor((tl%3600)/60),s2=tl%60;
+      var el2=document.getElementById('exam-timer');
+      if(el2){el2.textContent=h2+':'+pad(m2)+':'+pad(s2);el2.className='exam-timer warn';}
+      return;
+    }
+    // Not paused — save our running state
+    dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
+  });
   S.timerInt = setInterval(function(){
     if (S.timerPaused) return;
     S.timeLeft--;
@@ -1565,6 +1594,18 @@ function _runExamTimer(examCode, startTimeLeft) {
     // Sync to Supabase every 15 seconds
     if (S.timeLeft % 15 === 0) {
       dbUpsert('timer_state', {exam_code:examCode, time_left:S.timeLeft, paused:false, started_at:Date.now()}, 'exam_code');
+    }
+    // Autosave answers every 30 seconds
+    if (S.timeLeft % 30 === 0 && S.student && examCode) {
+      var _eta2=document.getElementById('essay-ta-'+S.curTask);if(_eta2) S.answers['t'+S.curTask]=_eta2.value;
+      dbUpsert('submissions',{
+        student_email:S.student.email,
+        exam_code:examCode,
+        answers:JSON.parse(JSON.stringify(S.answers)),
+        elapsed_str:'in_progress',
+        exam_start_time:S.examStartTime||0,
+        submitted_at:null
+      },'student_email,exam_code');
     }
     // Check Supabase every 3 seconds for admin pause/adjust
     if (S.timeLeft % 3 === 0) {
@@ -1612,6 +1653,17 @@ function startExam(isReEntry){
   clearInterval(S.timerInt);
 
   if (isReEntry) {
+    // Restore saved answers from Supabase
+    if (S.student) {
+      dbGet('submissions', {student_email:S.student.email, exam_code:_examCode}).then(function(subRows) {
+        if (subRows.length && subRows[0].elapsed_str === 'in_progress') {
+          S.answers = subRows[0].answers || {t1:{},t2:{},t3:{},t4:{},t5:{},t6:{},t7:''};
+          showToast('Your previous answers have been restored', 'success');
+          // Re-render current task to show restored answers
+          renderTask(S.curTask);
+        }
+      });
+    }
     // Read remaining time from Supabase timer_state
     dbGet('timer_state', {exam_code: _examCode}).then(function(rows) {
       var startLeft = _totalSecs;
@@ -2803,10 +2855,26 @@ function openLiveEditModal(code) {
   var body  = document.getElementById('live-edit-body');
   if (!modal || !body) return;
   modal.setAttribute('data-code', code);
-  var isPaused = S.timerPaused;
-  var t0 = S.timeLeft || 0;
-  var timerCol = t0 < 600 ? 'var(--pink)' : t0 < 1800 ? '#ff9800' : '#fff';
-  body.innerHTML =
+  // Read real pause state from Supabase
+  dbGet('timer_state', {exam_code: code}).then(function(timerRows) {
+    var isPaused = timerRows.length && timerRows[0].paused;
+    var t0 = 0;
+    if (timerRows.length) {
+      var ts = timerRows[0];
+      if (ts.paused) {
+        t0 = ts.time_left || 0;
+      } else {
+        var elapsed = ts.started_at ? Math.floor((Date.now()-ts.started_at)/1000) : 0;
+        t0 = Math.max(0, (ts.time_left||0) - elapsed);
+      }
+    } else {
+      var sc = S.schedule && S.schedule[code];
+      t0 = sc ? (sc.duration||150)*60 : 0;
+    }
+    var timerCol = t0 < 600 ? 'var(--pink)' : t0 < 1800 ? '#ff9800' : '#fff';
+    var th=Math.floor(t0/3600), tm=Math.floor((t0%3600)/60), ts2=t0%60;
+    var tStr = th+':'+pad(tm)+':'+pad(ts2);
+    body.innerHTML =
     '<div style="margin-bottom:14px;">'
     + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);margin-bottom:4px;">Exam</div>'
     + '<div style="font-weight:700;font-size:15px;">' + (ex.title||code) + '</div>'
@@ -2817,7 +2885,7 @@ function openLiveEditModal(code) {
     + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.4);margin-bottom:8px;">'
     + (isPaused ? '⏸ PAUSED' : '▶ LIVE TIMER') + '</div>'
     + '<div id="live-modal-timer" style="font-family:\'Courier New\',monospace;font-size:46px;font-weight:700;letter-spacing:3px;color:' + timerCol + ';line-height:1;">'
-    + formatTimeLeft()
+    + tStr
     + '</div>'
     + '</div>'
     // ── Pause / Continue ──
@@ -2845,6 +2913,7 @@ function openLiveEditModal(code) {
     + '</div>'
     + '</div>';
   document.getElementById('live-edit-overlay').style.display = 'flex';
+  }); // end dbGet.then
   // Tick the modal timer — reads from Supabase every second for real sync
   clearInterval(window._liveModalInt);
   window._liveModalInt = setInterval(function() {
@@ -3017,10 +3086,10 @@ function showTimesUp() {
   S.timerPaused = false;
   var el = document.getElementById('exam-timer');
   if (el) { el.textContent = '0:00:00'; el.className = 'exam-timer danger'; }
-  // Disable exam protection so buttons work
   disableExamProtection();
+  document.body.classList.remove('exam-active');
   var ov = document.getElementById('times-up-overlay');
-  if (ov) { ov.style.display = 'flex'; ov.style.zIndex = '9999'; }
+  if (ov) { ov.style.display = 'flex'; ov.style.zIndex = '10000'; }
 }
 async function doSubmitFromTimesUp() {
   document.getElementById('times-up-overlay').style.display = 'none';
@@ -3036,9 +3105,17 @@ async function doSubmitFromTimesUp() {
   document.getElementById('submit-success-overlay').style.display = 'flex';
 }
 function showSubmitConfirm() {
+  // Permanently disable exam protection for submission
   disableExamProtection();
+  document.body.classList.remove('exam-active');
   var ov = document.getElementById('submit-confirm-overlay');
-  if (ov) { ov.style.display = 'flex'; ov.style.zIndex = '9999'; }
+  if (ov) {
+    ov.style.display = 'flex';
+    ov.style.zIndex = '10000';
+    // Make sure the Yes button calls doSubmit directly
+    var yesBtn = ov.querySelector('button:last-child');
+    if (yesBtn) yesBtn.onclick = doSubmit;
+  }
 }
 async function doSubmit() {
   document.getElementById('submit-confirm-overlay').style.display = 'none';
