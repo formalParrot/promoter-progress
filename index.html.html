@@ -3904,6 +3904,21 @@ function renderTaskList() {
 function renderStudentResults() {
   var container = document.getElementById('student-results-section');
   if (!container || !S.student) return;
+  // Always reload grades fresh from Supabase before rendering
+  dbGet('grades').then(function(gradeRows) {
+    gradeRows.forEach(function(r) {
+      var key=r.student_email+'|'+r.exam_code;
+      if (!S.grades[key]) S.grades[key]={};
+      var obj={score:r.score, max:r.max_score, feedback:r.feedback||''};
+      if (r.fluency!==null&&r.fluency!==undefined){obj.fluency=r.fluency;obj.accuracy=r.accuracy;}
+      S.grades[key][r.task_key]=obj;
+    });
+    _doRenderStudentResults();
+  });
+}
+function _doRenderStudentResults() {
+  var container = document.getElementById('student-results-section');
+  if (!container || !S.student) return;
   var email = S.student.email;
 
   // Collect completed exams for this student
@@ -3953,7 +3968,16 @@ function renderStudentResults() {
                     tType3==='match'     ? 'Matching'  :
                     tType3==='gapfill4'||tType3==='gapfill5' ? 'Gap Fill' :
                     tType3==='dialogue'  ? 'Dialogue'  : '';
-      var tGrade  = isEssay ? (grades['t'+t] || grades['wt'+t] || grades.essay) : grades[tKey];
+      var tGrade = isEssay
+        ? (grades['t'+t] || grades['wt'+t] || grades['essay'] || grades['t7'] || grades['wt7'])
+        : grades[tKey];
+      // Extra fallback: if no grade found by tKey, check all keys for a match
+      if (!tGrade) {
+        var allKeys = Object.keys(grades);
+        for (var ki=0; ki<allKeys.length; ki++) {
+          if (allKeys[ki] === 't'+t || allKeys[ki] === 'wt'+t) { tGrade = grades[allKeys[ki]]; break; }
+        }
+      }
 
       if (tGrade) {
         totalScore += tGrade.score;
@@ -4009,7 +4033,8 @@ function renderStudentResults() {
   }
 
   container.innerHTML = html2;
-}
+} // end _doRenderStudentResults
+
 function showTaskFeedback(examCode, taskKey) {
   var email    = S.student ? S.student.email : '';
   var gradeKey = email + '|' + examCode;
