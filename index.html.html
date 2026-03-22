@@ -2048,10 +2048,8 @@ function renderTask(n){
   }
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
-  // Show submit if this is last task OR if there's no next task defined
-  var _hasNextTask = (n < _lastTask) && TASKS[n+1] && TASKS[n+1].type;
-  if(_hasNextTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
-  else h+='<button type="button" class="geo-btn geo-btn-pink" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+  if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
+  else h+='<button type="button" class="geo-btn geo-btn-pink" style="min-width:160px;" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
   h+='</div>';
 
   main.innerHTML=h;
@@ -2558,8 +2556,7 @@ function buildEssays(){
 
       var entries=[];
       subs.forEach(function(sub){
-        // Skip autosaves that were never actually submitted
-        if(sub.elapsed_str==='in_progress' && !sub.submitted_at) return;
+        // Show all submissions that have answers
         var stEmail=sub.student_email, exCode=sub.exam_code;
         var ex=S.exams[exCode]; if(!ex) return;
         var stName='';
@@ -3192,11 +3189,7 @@ function showSubmitConfirm() {
   ov.style.left = '0';
   ov.style.right = '0';
   ov.style.bottom = '0';
-  ov.style.background = 'rgba(0,0,0,0.6)';
   ov.style.zIndex = '10000';
-  ov.style.alignItems = 'center';
-  ov.style.justifyContent = 'center';
-  ov.style.padding = '20px';
 }
 async function doSubmit() {
   document.getElementById('submit-confirm-overlay').style.display = 'none';
