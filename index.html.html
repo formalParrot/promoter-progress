@@ -1038,7 +1038,7 @@ tbody tr:hover{background:var(--gray-50);}
 
 
 <!-- ===== TIMES UP OVERLAY ===== -->
-<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="times-up-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:slideUp .3s ease;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">⏰</div>
     <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:10px;color:var(--pink);">Time's Up!</div>
@@ -1048,7 +1048,7 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT CONFIRM OVERLAY ===== -->
-<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-confirm-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .25s ease;text-align:center;">
     <div style="font-size:40px;margin-bottom:12px;">📋</div>
     <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:10px;">Submit Exam?</div>
@@ -1061,7 +1061,7 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT SUCCESS OVERLAY ===== -->
-<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-success-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .3s ease;text-align:center;">
     <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">✓</div>
     <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:10px;">Exam Submitted!</div>
@@ -2063,14 +2063,14 @@ function renderTask(n){
       disableExamProtection();
       document.body.classList.remove('exam-active');
       var ov = document.getElementById('submit-confirm-overlay');
-      alert('overlay found: ' + (ov ? 'YES display='+ov.style.display+' zIndex='+ov.style.zIndex : 'NO - NULL'));
+
       if (ov) {
         ov.style.display = 'flex';
         ov.style.position = 'fixed';
         ov.style.top = '0'; ov.style.left = '0';
         ov.style.right = '0'; ov.style.bottom = '0';
         ov.style.zIndex = '10000';
-        alert('overlay set - display is now: ' + ov.style.display);
+
       }
     };
     _submitBtn.addEventListener('click', _doShowConfirm, true);
