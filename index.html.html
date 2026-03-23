@@ -705,7 +705,7 @@ tbody tr:hover{background:var(--gray-50);}
           <div class="acard">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
               <div class="acard-title" style="margin:0;">All Exams</div>
-              <button class="abtn abtn-pink" onclick="showExamBuilder()">+ New Exam</button>
+              <button class="abtn abtn-pink" onclick="openNewExamBuilder()">+ New Exam</button>
             </div>
             <div class="tbl-wrap" id="exam-list-table"><table><thead><tr><th>Title</th><th>Code</th><th>Duration</th><th>Status</th><th></th></tr></thead><tbody id="exam-list-tbody"><tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:20px;font-size:13px;">No exams yet &mdash; create one above</td></tr></tbody></table></div>
           </div>
@@ -2272,6 +2272,62 @@ function renderSchedTable(){
 }
 function showExamBuilder(){ document.getElementById('exam-list-view').style.display='none'; document.getElementById('exam-builder-view').style.display='block'; }
 function hideExamBuilder(){ document.getElementById('exam-builder-view').style.display='none'; document.getElementById('exam-list-view').style.display='block'; }
+
+function openNewExamBuilder() {
+  var titleEl = document.getElementById('eb-title');
+  var codeEl  = document.getElementById('eb-code');
+  var infoEl  = document.getElementById('eb-info');
+  var ptsEl   = document.getElementById('eb-pts');
+  var dateEl  = document.getElementById('eb-date');
+  var timeEl  = document.getElementById('eb-time-start');
+
+  if (titleEl) titleEl.value = '';
+  if (codeEl)  { codeEl.value = ''; codeEl.removeAttribute('data-editing'); }
+  if (infoEl)  infoEl.value  = '';
+  if (ptsEl)   ptsEl.value   = 70;
+  if (dateEl)  dateEl.value  = '';
+  // Set default time to next hour
+  if (timeEl) {
+    var d = new Date();
+    d.setHours(d.getHours() + 1);
+    timeEl.value = pad2(d.getHours()) + ':00';
+  }
+
+  if (typeof scrollDrumTo === 'function') {
+    scrollDrumTo('drum-hours', 2);
+    scrollDrumTo('drum-minutes', 30);
+  }
+  
+  S.parsedExam = null;
+  S.parsedTasks = [];
+  S.answerKey = {};
+  S.audioURL = null;
+  
+  var titleBar = document.querySelector('#exam-builder-view .asec-title');
+  if (titleBar) titleBar.innerHTML = '<button class="back-btn" onclick="hideExamBuilder()">&larr; Back</button> Create Exam';
+
+  var summEl  = document.getElementById('parsed-summary');
+  var statusEl= document.getElementById('pdf-status');
+  var resultEl= document.getElementById('pdf-parsed-result');
+  var previewEl= document.getElementById('pdf-preview');
+  var nameEl  = document.getElementById('pdf-name');
+  var audioPreviewEl = document.getElementById('audio-preview');
+  
+  if (summEl) summEl.textContent = '';
+  if (statusEl) statusEl.textContent = 'Ready';
+  if (resultEl) resultEl.style.display = 'none';
+  if (previewEl) previewEl.style.display = 'none';
+  if (nameEl) nameEl.textContent = 'exam.pdf';
+  if (audioPreviewEl) audioPreviewEl.style.display = 'none';
+  
+  var unlockPreview = document.getElementById('exam-unlock-preview');
+  if (unlockPreview) unlockPreview.style.display = 'none';
+  var idsPreview = document.getElementById('exam-ids-preview');
+  if (idsPreview) idsPreview.style.display = 'none';
+
+  showExamBuilder();
+}
+
 function switchBuilder(tab){
   var bu=document.getElementById('btab-upload'),bk=document.getElementById('btab-key');
   if(bu) bu.className='btab'+(tab==='upload'?' active':'');
@@ -2443,6 +2499,14 @@ async function saveExam(){
   if (!title||!code) { showToast('Please fill in exam title and code',''); return; }
   var upperCode = code.toUpperCase();
   var pts = document.getElementById('eb-pts') ? (parseInt(document.getElementById('eb-pts').value)||70) : 70;
+
+  var codeElHtml = document.getElementById('eb-code');
+  var editingCode = codeElHtml ? codeElHtml.getAttribute('data-editing') : null;
+  if (editingCode !== upperCode && S.exams && S.exams[upperCode]) {
+    showToast('Exam code ' + upperCode + ' already exists! Please use a unique code.', '');
+    return;
+  }
+
 
   // Save exam — strip parsed_exam to reduce payload size if too large
   var parsedExamToSave = S.parsedExam || null;
