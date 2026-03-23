@@ -17,8 +17,6 @@ input,textarea,select{-webkit-user-select:text!important;user-select:text!import
 /* During exam — lock everything except essay textarea */
 body.exam-active *{-webkit-user-select:none!important;-moz-user-select:none!important;-ms-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;}
 body.exam-active textarea.essay-ta{-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default!important;}
-body.exam-active button{pointer-events:auto!important;cursor:pointer!important;-webkit-user-select:none!important;touch-action:manipulation!important;}
-body.exam-active select{pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important;}
 .page{display:none;}
 .page.active{display:flex;width:100%;min-height:100vh;}
 #page-auth.active{flex-direction:column;align-items:center;justify-content:center;}
@@ -1038,7 +1036,7 @@ tbody tr:hover{background:var(--gray-50);}
 
 
 <!-- ===== TIMES UP OVERLAY ===== -->
-<div id="times-up-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="times-up-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:400px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.3);animation:slideUp .3s ease;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">⏰</div>
     <div style="font-family:Georgia,serif;font-size:24px;font-weight:700;margin-bottom:10px;color:var(--pink);">Time's Up!</div>
@@ -1048,7 +1046,7 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT CONFIRM OVERLAY ===== -->
-<div id="submit-confirm-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .25s ease;text-align:center;">
     <div style="font-size:40px;margin-bottom:12px;">📋</div>
     <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:10px;">Submit Exam?</div>
@@ -1061,12 +1059,12 @@ tbody tr:hover{background:var(--gray-50);}
 </div>
 
 <!-- ===== SUBMIT SUCCESS OVERLAY ===== -->
-<div id="submit-success-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+<div id="submit-success-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:36px 30px;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:slideUp .3s ease;text-align:center;">
     <div style="width:64px;height:64px;background:#e8f5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px;">✓</div>
     <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;margin-bottom:10px;">Exam Submitted!</div>
     <div style="font-size:14px;color:var(--gray-600);line-height:1.6;margin-bottom:24px;">Your exam has been successfully submitted. Your results will be available once grading is complete.</div>
-    <button onclick="closeSubmitSuccess()" style="width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Go to Dashboard</button>
+    <button onclick="closeSubmitSuccess()" style="width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-family:Georgia,serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,0,110,.3);">Okay</button>
   </div>
 </div>
 
@@ -2051,27 +2049,10 @@ function renderTask(n){
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
   if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
-  else h+='<button type="button" id="submit-btn-final" class="geo-btn geo-btn-pink" style="min-width:160px;touch-action:manipulation;" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+  else h+='<button type="button" class="geo-btn geo-btn-pink" style="min-width:160px;" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
   h+='</div>';
 
   main.innerHTML=h;
-  // Attach submit button listener directly (works even when onclick is blocked)
-  var _submitBtn = document.getElementById('submit-btn-final');
-  if (_submitBtn) {
-    var _doShowConfirm = function(e) {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
-      disableExamProtection();
-      document.body.classList.remove('exam-active');
-      var ov = document.getElementById('submit-confirm-overlay');
-
-      if (ov) {
-        ov.classList.add('overlay-visible');
-        ov.style.display = 'flex';
-      }
-    };
-    _submitBtn.addEventListener('click', _doShowConfirm, true);
-    _submitBtn.addEventListener('touchend', _doShowConfirm, true);
-  }
   if(S.pdfDoc) renderPdfPage(n+1,'pdf-canvas-'+n);
   if(task && task.type==='gapfill4') { setTimeout(initDragDrop, 50); }
   if(task.type==='essay'||task.type==='writing'){
@@ -3178,7 +3159,7 @@ function showTimesUp() {
   disableExamProtection();
   document.body.classList.remove('exam-active');
   var ov = document.getElementById('times-up-overlay');
-  if (ov) { ov.classList.add('overlay-visible'); ov.style.display = 'flex'; }
+  if (ov) { ov.style.display = 'flex'; ov.style.zIndex = '10000'; }
 }
 async function doSubmitFromTimesUp() {
   document.getElementById('times-up-overlay').style.display = 'none';
@@ -3195,11 +3176,20 @@ async function doSubmitFromTimesUp() {
     S.completed[compKey]={elapsedStr:elapsedStr, submittedAt:new Date().toISOString(), answers:answers};
     await dbUpsert('submissions',{student_email:S.student.email, exam_code:S.activeExamCode, answers:answers, elapsed_str:elapsedStr, exam_start_time:S.examStartTime||0, submitted_at:new Date().toISOString()},'student_email,exam_code');
   }
-  var successOv = document.getElementById('submit-success-overlay');
-  if (successOv) { successOv.classList.add('overlay-visible'); successOv.style.display = 'flex'; }
+  document.getElementById('submit-success-overlay').style.display = 'flex';
 }
 function showSubmitConfirm() {
-  doSubmit();
+  disableExamProtection();
+  document.body.classList.remove('exam-active');
+  var ov = document.getElementById('submit-confirm-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+  ov.style.position = 'fixed';
+  ov.style.top = '0';
+  ov.style.left = '0';
+  ov.style.right = '0';
+  ov.style.bottom = '0';
+  ov.style.zIndex = '10000';
 }
 async function doSubmit() {
   document.getElementById('submit-confirm-overlay').style.display = 'none';
@@ -3224,8 +3214,7 @@ async function doSubmit() {
     S.completed[compKey]={elapsedStr:elapsedStr, submittedAt:new Date().toISOString(), answers:answers};
     await dbUpsert('submissions',{student_email:S.student.email, exam_code:S.activeExamCode, answers:answers, elapsed_str:elapsedStr, exam_start_time:S.examStartTime||0, submitted_at:new Date().toISOString()},'student_email,exam_code');
   }
-  var successOv = document.getElementById('submit-success-overlay');
-  if (successOv) { successOv.classList.add('overlay-visible'); successOv.style.display = 'flex'; }
+  document.getElementById('submit-success-overlay').style.display = 'flex';
 }
 function closeSubmitSuccess() {
   document.getElementById('submit-success-overlay').style.display = 'none';
