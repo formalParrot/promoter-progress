@@ -1836,7 +1836,7 @@ function renderTask(n){
     var h2 = '<div class="task-card"><p style="color:var(--gray-400);text-align:center;padding:40px;">Loading task...</p></div>';
     h2 += '<div class="exam-nav-btns">';
     if(n>0) h2 += '<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
-    h2 += '<button type="button" class="geo-btn geo-btn-pink" onclick="(function(){disableExamProtection();document.body.classList.remove(\'exam-active\');var ov=document.getElementById(\'submit-confirm-overlay\');if(ov){ov.style.display=\'flex\';ov.style.position=\'fixed\';ov.style.top=\'0\';ov.style.left=\'0\';ov.style.right=\'0\';ov.style.bottom=\'0\';ov.style.zIndex=\'10000\';}})()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+    h2 += '<button type="button" class="geo-btn geo-btn-pink" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
     h2 += '</div>';
     main.innerHTML = h2;
     return;
@@ -2051,7 +2051,7 @@ function renderTask(n){
   h+='<div class="exam-nav-btns">';
   if(n>0) h+='<button class="geo-btn geo-btn-outline" onclick="gotoTask('+(n-1)+')">\u2190 \u10E3\u10D9\u10D0\u10DC \u10D3\u10D0\u10D1\u10E0\u10E3\u10DC\u10D4\u10D1\u10D0</button>';
   if(n < _lastTask) h+='<button class="geo-btn geo-btn-pink" onclick="gotoTask('+(n+1)+')">\u10E8\u10D4\u10DB\u10D3\u10D4\u10D2\u10D6\u10D4 \u10D2\u10D0\u10D3\u10D0\u10E1\u10D5\u10DA\u10D0 \u2192</button>';
-  else h+='<button type="button" id="submit-btn-final" class="geo-btn geo-btn-pink" style="min-width:160px;touch-action:manipulation;" onclick="(function(){disableExamProtection();document.body.classList.remove(\'exam-active\');var ov=document.getElementById(\'submit-confirm-overlay\');if(ov){ov.style.display=\'flex\';ov.style.position=\'fixed\';ov.style.top=\'0\';ov.style.left=\'0\';ov.style.right=\'0\';ov.style.bottom=\'0\';ov.style.zIndex=\'10000\';}})()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
+  else h+='<button type="button" id="submit-btn-final" class="geo-btn geo-btn-pink" style="min-width:160px;touch-action:manipulation;" onclick="showSubmitConfirm()">\u10D2\u10D0\u10DB\u10DD\u10EA\u10D3\u10D8\u10E1 \u10D3\u10D0\u10E1\u10E0\u10E3\u10DA\u10D4\u10D1\u10D0 \u2713</button>';
   h+='</div>';
 
   main.innerHTML=h;
@@ -2065,12 +2065,8 @@ function renderTask(n){
       var ov = document.getElementById('submit-confirm-overlay');
 
       if (ov) {
+        ov.classList.add('overlay-visible');
         ov.style.display = 'flex';
-        ov.style.position = 'fixed';
-        ov.style.top = '0'; ov.style.left = '0';
-        ov.style.right = '0'; ov.style.bottom = '0';
-        ov.style.zIndex = '10000';
-
       }
     };
     _submitBtn.addEventListener('click', _doShowConfirm, true);
@@ -3182,7 +3178,7 @@ function showTimesUp() {
   disableExamProtection();
   document.body.classList.remove('exam-active');
   var ov = document.getElementById('times-up-overlay');
-  if (ov) { ov.style.display = 'flex'; ov.style.zIndex = '10000'; }
+  if (ov) { ov.classList.add('overlay-visible'); ov.style.display = 'flex'; }
 }
 async function doSubmitFromTimesUp() {
   document.getElementById('times-up-overlay').style.display = 'none';
@@ -3206,13 +3202,8 @@ function showSubmitConfirm() {
   document.body.classList.remove('exam-active');
   var ov = document.getElementById('submit-confirm-overlay');
   if (!ov) return;
+  ov.classList.add('overlay-visible');
   ov.style.display = 'flex';
-  ov.style.position = 'fixed';
-  ov.style.top = '0';
-  ov.style.left = '0';
-  ov.style.right = '0';
-  ov.style.bottom = '0';
-  ov.style.zIndex = '10000';
 }
 async function doSubmit() {
   document.getElementById('submit-confirm-overlay').style.display = 'none';
