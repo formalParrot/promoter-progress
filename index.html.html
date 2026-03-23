@@ -3225,14 +3225,9 @@ function showTimesUp() {
     try { if (typeof disableExamProtection === 'function') disableExamProtection(); } catch(e) {}
     try { document.body.classList.remove('exam-active'); } catch(e) {}
     
-    var ov = document.getElementById('times-up-overlay');
-    if (ov) { 
-      ov.style.display = 'flex'; 
-      ov.style.zIndex = '100000'; 
-    }
+    doSubmitFromTimesUp();
   } catch(err) {
     console.error("showTimesUp error:", err);
-    alert("Time's up! (Error showing popup)");
   }
 }
 
@@ -3240,6 +3235,7 @@ async function doSubmitFromTimesUp() {
   var succ = document.getElementById('submit-success-overlay');
   if (succ) {
     succ.style.display = 'flex';
+    succ.style.setProperty('display', 'flex', 'important');
     succ.style.zIndex = '100000';
   }
   var tu = document.getElementById('times-up-overlay');
@@ -3263,29 +3259,9 @@ async function doSubmitFromTimesUp() {
 }
 
 function showSubmitConfirm() {
-  try {
-    try { if (typeof disableExamProtection === 'function') disableExamProtection(); } catch(e) { console.error('disableExamProtection error', e); }
-    try { document.body.classList.remove('exam-active'); } catch(e) {}
-    
-    var ov = document.getElementById('submit-confirm-overlay');
-    if (ov) {
-      ov.style.display = 'flex';
-      ov.style.position = 'fixed';
-      ov.style.top = '0';
-      ov.style.left = '0';
-      ov.style.right = '0';
-      ov.style.bottom = '0';
-      ov.style.zIndex = '100000';
-    } else {
-      console.error("Submit confirmation overlay not found!");
-      alert("Are you sure you want to finish and submit your exam?");
-      doSubmit();
-    }
-  } catch(err) {
-    console.error("showSubmitConfirm error:", err);
-    alert("Error showing submit confirm! Proceeding to submit...");
-    doSubmit();
-  }
+  try { if (typeof disableExamProtection === 'function') disableExamProtection(); } catch(e) {}
+  try { document.body.classList.remove('exam-active'); } catch(e) {}
+  doSubmit();
 }
 async function doSubmit() {
   var conf = document.getElementById('submit-confirm-overlay');
@@ -3293,6 +3269,7 @@ async function doSubmit() {
   var succ = document.getElementById('submit-success-overlay');
   if (succ) {
     succ.style.display = 'flex';
+    succ.style.setProperty('display', 'flex', 'important');
     succ.style.zIndex = '100000';
   }
   clearInterval(S.timerInt);
